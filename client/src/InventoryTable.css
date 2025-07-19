@@ -59,14 +59,16 @@
   background-color: #ffcccc;
 }
 
-.table-controls {
+.controls-container {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin: 0.5rem 0;
+  gap: 10px;
+  margin-left: 1rem;
+  margin-top: 10px;
+  flex-wrap: wrap;
 }
 
-.table-controls input,
-.table-controls select {
+.controls-container input,
+.controls-container select {
   padding: 0.25rem;
 }
