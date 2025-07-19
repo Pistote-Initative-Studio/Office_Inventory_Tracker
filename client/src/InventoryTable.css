@@ -42,3 +42,8 @@
 .error-input {
   border: 1px solid red;
 }
+
+/* Highlight rows that are at or below the restock threshold */
+.low-stock {
+  background-color: #ffcccc;
+}

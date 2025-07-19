@@ -126,7 +126,15 @@ function InventoryTable({ refreshFlag }) {
           </thead>
           <tbody>
             {items.map((item) => (
-              <tr key={item.id}>
+              <tr
+                key={item.id}
+                className={
+                  item.restock_threshold != null &&
+                  Number(item.quantity) <= Number(item.restock_threshold)
+                    ? 'low-stock'
+                    : ''
+                }
+              >
                 <td>{item.id}</td>
                 <td>{item.name}</td>
                 <td>{item.category}</td>
