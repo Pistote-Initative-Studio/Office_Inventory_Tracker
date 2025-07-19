@@ -2,12 +2,17 @@
   border-collapse: collapse;
   width: 100%;
 }
-.inventory-table th, .inventory-table td {
-  border: 1px solid #ddd;
+.inventory-table th,
+.inventory-table td {
+  border: 1px solid #ccc;
   padding: 8px;
 }
 .inventory-table th {
-  background-color: #f2f2f2;
+  background: linear-gradient(to bottom, #ffffff, #e7e7e7);
+}
+
+.inventory-table tbody tr:hover {
+  background-color: rgba(173, 216, 230, 0.3);
 }
 
 .modal {
@@ -16,17 +21,19 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .modal-content {
-  background: white;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(4px);
   padding: 1rem;
-  border-radius: 4px;
+  border-radius: 8px;
   position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.6);
 }
 
 .close-button {
