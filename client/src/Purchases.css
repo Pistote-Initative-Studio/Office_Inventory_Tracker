@@ -1,0 +1,81 @@
+.purchases-container table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.purchases-container th,
+.purchases-container td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+.purchases-container th {
+  background-color: #f2f2f2;
+}
+
+.controls-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 1rem;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.controls-container input,
+.controls-container select {
+  padding: 0.25rem;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: white;
+  padding: 1rem;
+  border-radius: 4px;
+  position: relative;
+}
+
+.status-message {
+  text-align: center;
+  width: 100%;
+  font-weight: bold;
+  animation: fadeIn 0.5s, fadeOut 0.5s 2.5s;
+  opacity: 0;
+  animation-fill-mode: forwards;
+  margin-top: 5px;
+}
+
+.success-message {
+  color: green;
+}
+
+.error-message {
+  color: red;
+  font-size: 0.85rem;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
