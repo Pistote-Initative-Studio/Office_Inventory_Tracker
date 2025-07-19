@@ -1,0 +1,12 @@
+.add-item-form {
+  margin-bottom: 1rem;
+}
+.add-item-form div {
+  margin: 0.5rem 0;
+}
+.add-item-form label {
+  margin-right: 0.5rem;
+}
+.add-item-form input {
+  padding: 0.25rem;
+}
