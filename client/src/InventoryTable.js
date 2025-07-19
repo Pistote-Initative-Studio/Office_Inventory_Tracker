@@ -8,6 +8,9 @@ function InventoryTable({ refreshFlag }) {
   const [editErrors, setEditErrors] = useState({});
   const [editApiError, setEditApiError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [filteredData, setFilteredData] = useState([]);
 
   const fetchItems = async () => {
     setLoading(true);
@@ -27,6 +30,22 @@ function InventoryTable({ refreshFlag }) {
   useEffect(() => {
     fetchItems();
   }, [refreshFlag]);
+
+  useEffect(() => {
+    let data = items;
+    if (selectedCategory) {
+      data = data.filter((item) => item.category === selectedCategory);
+    }
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      data = data.filter(
+        (item) =>
+          item.name.toLowerCase().includes(term) ||
+          (item.category && item.category.toLowerCase().includes(term))
+      );
+    }
+    setFilteredData(data);
+  }, [items, searchTerm, selectedCategory]);
 
   const handleDelete = async (id) => {
     try {
@@ -108,6 +127,25 @@ function InventoryTable({ refreshFlag }) {
       <h2>Inventory</h2>
       {successMsg && <p className="success-message">{successMsg}</p>}
       <button onClick={fetchItems}>Refresh</button>
+      <div className="table-controls">
+        <input
+          type="text"
+          placeholder="Search..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <select
+          value={selectedCategory}
+          onChange={(e) => setSelectedCategory(e.target.value)}
+        >
+          <option value="">All Categories</option>
+          {Array.from(new Set(items.map((it) => it.category))).map((cat) => (
+            <option key={cat} value={cat}>
+              {cat}
+            </option>
+          ))}
+        </select>
+      </div>
       {loading ? (
         <p>Loading...</p>
       ) : (
@@ -125,7 +163,7 @@ function InventoryTable({ refreshFlag }) {
             </tr>
           </thead>
           <tbody>
-            {items.map((item) => (
+            {filteredData.map((item) => (
               <tr
                 key={item.id}
                 className={
