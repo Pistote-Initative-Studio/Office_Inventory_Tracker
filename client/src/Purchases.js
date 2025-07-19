@@ -56,7 +56,7 @@ function Purchases() {
 
   return (
     <div className="purchases-container">
-      <div className="controls-container">
+      <div className="toolbar">
         <button onClick={fetchOrders}>Refresh</button>
         <button onClick={() => setShowModal(true)}>Create Purchase Order</button>
       </div>

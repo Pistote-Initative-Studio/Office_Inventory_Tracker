@@ -38,9 +38,21 @@ function App() {
         </button>
       </div>
       <div className="tab-content">
-        {activeTab === 'Inventory' && <InventoryTable refreshFlag={refreshFlag} />}
-        {activeTab === 'Purchases' && <Purchases />}
-        {activeTab === 'Trends' && <Trends />}
+        {activeTab === 'Inventory' && (
+          <div className="content-box">
+            <InventoryTable refreshFlag={refreshFlag} />
+          </div>
+        )}
+        {activeTab === 'Purchases' && (
+          <div className="content-box">
+            <Purchases />
+          </div>
+        )}
+        {activeTab === 'Trends' && (
+          <div className="content-box">
+            <Trends />
+          </div>
+        )}
       </div>
     </div>
   );

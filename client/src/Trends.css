@@ -54,28 +54,35 @@
   flex: 1 1 300px;
 }
 .trends-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
   margin-left: 10px;
-  margin-bottom: 0.5rem;
 }
 .item-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 6px;
+  overflow: hidden;
 }
 .item-table th,
 .item-table td {
-  border: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
   padding: 0.25rem;
   text-align: left;
+  transition: background 0.3s ease;
 }
 .item-table th {
-  background: linear-gradient(to bottom, #ffffff, #e7e7e7);
+  background: linear-gradient(to bottom, #f9f9f9, #e4e4e4);
+  border-bottom: 1px solid #ccc;
+  box-shadow: inset 0 -2px 2px rgba(0, 0, 0, 0.05);
 }
-
+.item-table tbody tr:nth-child(even) {
+  background: #f8f8f8;
+}
+.item-table tbody tr:nth-child(odd) {
+  background: #ffffff;
+}
 .item-table tbody tr:hover {
-  background-color: rgba(173, 216, 230, 0.3);
+  background: #eaf4ff;
 }
 @media (max-width: 700px) {
   .trends-layout {
