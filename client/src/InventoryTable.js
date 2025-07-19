@@ -153,11 +153,16 @@ function InventoryTable({ refreshFlag }) {
     };
   }, [showAddModal]);
 
+  const statusMessage = successMsg || editApiError;
+  const statusType = successMsg ? 'success-message' : 'error-message';
+
   return (
     <div className="inventory-table">
-      {successMsg && (
-        <div className="status-message success-message">{successMsg}</div>
-      )}
+      <div className="status-message-container">
+        {statusMessage && (
+          <div className={`status-message ${statusType}`}>{statusMessage}</div>
+        )}
+      </div>
       <div className="controls-container">
         <button onClick={fetchItems}>Refresh</button>
         <input
