@@ -11,18 +11,23 @@
   padding: 0.25rem;
 }
 
-.error-message {
-  color: red;
-  font-size: 0.85rem;
-}
-
-.success-message {
+.status-message {
   text-align: center;
   width: 100%;
   font-weight: bold;
-  color: green;
   margin-top: 5px;
   animation: fadeIn 0.5s, fadeOut 0.5s 2.5s;
+  opacity: 0;
+  animation-fill-mode: forwards;
+}
+
+.success-message {
+  color: green;
+}
+
+.error-message {
+  color: red;
+  font-size: 0.85rem;
 }
 
 @keyframes fadeIn {
