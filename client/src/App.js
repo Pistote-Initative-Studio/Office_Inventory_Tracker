@@ -15,7 +15,7 @@ function App() {
   return (
     <div className="App">
       <header className="app-header">
-        <h1>Office Supply Manager</h1>
+        <h1 className="app-title">Office Supply Manager</h1>
       </header>
       <div className="tabs">
         <button

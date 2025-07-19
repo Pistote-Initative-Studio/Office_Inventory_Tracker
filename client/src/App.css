@@ -2,6 +2,14 @@
   text-align: left;
 }
 
+:root {
+  --tab-width: 100px;
+}
+
+.app-title {
+  margin-left: var(--tab-width);
+}
+
 .app-header {
   display: flex;
   justify-content: flex-start;
@@ -47,6 +55,7 @@
   background: #f2f2f2;
   border: none;
   cursor: pointer;
+  width: var(--tab-width);
 }
 
 .tab.active {
