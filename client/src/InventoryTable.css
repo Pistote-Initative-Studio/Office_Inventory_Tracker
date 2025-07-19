@@ -26,6 +26,17 @@
   background: white;
   padding: 1rem;
   border-radius: 4px;
+  position: relative;
+}
+
+.close-button {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
 }
 
 .error-message {

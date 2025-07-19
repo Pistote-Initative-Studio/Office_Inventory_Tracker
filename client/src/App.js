@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import './App.css';
-import AddItemForm from './AddItemForm';
 import InventoryTable from './InventoryTable';
 
 function App() {
@@ -12,8 +11,7 @@ function App() {
 
   return (
     <div className="App">
-      <h1>Office Inventory Tracker</h1>
-      <AddItemForm onAdd={triggerRefresh} />
+      <h1>Office Supply Manager</h1>
       <InventoryTable refreshFlag={refreshFlag} />
     </div>
   );

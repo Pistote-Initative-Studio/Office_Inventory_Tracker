@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import './InventoryTable.css';
+import AddItemForm from './AddItemForm';
 
 function InventoryTable({ refreshFlag }) {
   const [items, setItems] = useState([]);
@@ -11,6 +12,7 @@ function InventoryTable({ refreshFlag }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [filteredData, setFilteredData] = useState([]);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const fetchItems = async () => {
     setLoading(true);
@@ -122,6 +124,25 @@ function InventoryTable({ refreshFlag }) {
     }
   };
 
+  const handleAddSuccess = () => {
+    setShowAddModal(false);
+    fetchItems();
+  };
+
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
+        setShowAddModal(false);
+      }
+    };
+    if (showAddModal) {
+      window.addEventListener('keydown', handleEsc);
+    }
+    return () => {
+      window.removeEventListener('keydown', handleEsc);
+    };
+  }, [showAddModal]);
+
   return (
     <div className="inventory-table">
       <h2>Inventory</h2>
@@ -145,6 +166,9 @@ function InventoryTable({ refreshFlag }) {
             </option>
           ))}
         </select>
+        <button type="button" onClick={() => setShowAddModal(true)}>
+          Add Item
+        </button>
       </div>
       {loading ? (
         <p>Loading...</p>
@@ -246,6 +270,23 @@ function InventoryTable({ refreshFlag }) {
               <button type="submit">Save</button>
               <button type="button" onClick={() => setEditingItem(null)}>Cancel</button>
             </form>
+          </div>
+        </div>
+      )}
+      {showAddModal && (
+        <div className="modal" onClick={() => setShowAddModal(false)}>
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="close-button"
+              type="button"
+              onClick={() => setShowAddModal(false)}
+            >
+              ×
+            </button>
+            <AddItemForm onSuccess={handleAddSuccess} />
           </div>
         </div>
       )}
