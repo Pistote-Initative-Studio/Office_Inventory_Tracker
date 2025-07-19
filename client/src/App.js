@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import './App.css';
 import InventoryTable from './InventoryTable';
+import Purchases from './Purchases';
+import Trends from './Trends';
 
 function App() {
   const [refreshFlag, setRefreshFlag] = useState(0);
+  const [activeTab, setActiveTab] = useState('Inventory');
 
   const triggerRefresh = () => {
     setRefreshFlag((prev) => prev + 1);
@@ -14,7 +17,31 @@ function App() {
       <header className="app-header">
         <h1>Office Supply Manager</h1>
       </header>
-      <InventoryTable refreshFlag={refreshFlag} />
+      <div className="tabs">
+        <button
+          className={activeTab === 'Inventory' ? 'tab active' : 'tab'}
+          onClick={() => setActiveTab('Inventory')}
+        >
+          Inventory
+        </button>
+        <button
+          className={activeTab === 'Purchases' ? 'tab active' : 'tab'}
+          onClick={() => setActiveTab('Purchases')}
+        >
+          Purchases
+        </button>
+        <button
+          className={activeTab === 'Trends' ? 'tab active' : 'tab'}
+          onClick={() => setActiveTab('Trends')}
+        >
+          Trends
+        </button>
+      </div>
+      <div className="tab-content">
+        {activeTab === 'Inventory' && <InventoryTable refreshFlag={refreshFlag} />}
+        {activeTab === 'Purchases' && <Purchases />}
+        {activeTab === 'Trends' && <Trends />}
+      </div>
     </div>
   );
 }

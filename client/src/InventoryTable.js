@@ -145,7 +145,6 @@ function InventoryTable({ refreshFlag }) {
 
   return (
     <div className="inventory-table">
-      <h2>Inventory</h2>
       {successMsg && <p className="success-message">{successMsg}</p>}
       <button onClick={fetchItems}>Refresh</button>
       <div className="table-controls">
