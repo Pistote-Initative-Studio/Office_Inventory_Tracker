@@ -33,7 +33,7 @@ const allAsync = (sql, params = []) =>
   });
 
 // Directory for generated PDFs
-const ordersDir = path.join(__dirname, 'purchase_orders');
+const ordersDir = path.join(__dirname, 'pdfs');
 if (!fs.existsSync(ordersDir)) {
   fs.mkdirSync(ordersDir);
 }
@@ -47,14 +47,12 @@ app.use('/inventory', inventoryRoutes);
 
 // POST /api/purchase-orders -> create a purchase order and generate PDF
 app.post('/api/purchase-orders', async (req, res) => {
-  const { itemId, quantity, supplier, notes } = req.body;
+  const { itemName, quantity, supplier, notes, orderDate } = req.body;
   try {
-    const itemRow = await getAsync('SELECT name FROM inventory WHERE id=?', [itemId]);
-    const itemName = itemRow ? itemRow.name : '';
-    const date = new Date().toISOString();
+    const date = orderDate || new Date().toISOString();
     const result = await runAsync(
-      'INSERT INTO purchaseOrders (date, item, quantity, supplier, notes) VALUES (?, ?, ?, ?, ?)',
-      [date, itemName, quantity, supplier, notes]
+      'INSERT INTO purchaseOrders (itemName, quantity, supplier, notes, orderDate) VALUES (?, ?, ?, ?, ?)',
+      [itemName, quantity, supplier, notes, date]
     );
     const id = result.lastID;
 

@@ -24,11 +24,11 @@ const createInventoryQuery = `CREATE TABLE IF NOT EXISTS inventory (
 // Create purchaseOrders table if it doesn't exist
 const createOrdersQuery = `CREATE TABLE IF NOT EXISTS purchaseOrders (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  date TEXT,
-  item TEXT,
+  itemName TEXT,
   quantity INTEGER,
   supplier TEXT,
-  notes TEXT
+  notes TEXT,
+  orderDate TEXT
 )`;
 
 // Ensure the table exists and populate it with sample data on first run
