@@ -5,6 +5,9 @@ function InventoryTable({ refreshFlag }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [editErrors, setEditErrors] = useState({});
+  const [editApiError, setEditApiError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   const fetchItems = async () => {
     setLoading(true);
@@ -38,15 +41,38 @@ function InventoryTable({ refreshFlag }) {
 
   const openEditModal = (item) => {
     setEditingItem({ ...item });
+    setEditErrors({});
+    setEditApiError('');
+    setSuccessMsg('');
   };
 
   const handleEditChange = (e) => {
     const { name, value } = e.target;
     setEditingItem((prev) => ({ ...prev, [name]: value }));
+    setEditErrors((prev) => ({ ...prev, [name]: '' }));
+    setEditApiError('');
   };
 
   const handleEditSave = async (e) => {
     e.preventDefault();
+    const errs = {};
+    if (!editingItem.name || editingItem.name.trim() === '') {
+      errs.name = 'Name is required';
+    }
+    const qty = Number(editingItem.quantity);
+    if (editingItem.quantity === '' || isNaN(qty) || qty < 0) {
+      errs.quantity = 'Quantity must be a non-negative number';
+    }
+    if (editingItem.restock_threshold !== '' && editingItem.restock_threshold !== null) {
+      const r = Number(editingItem.restock_threshold);
+      if (isNaN(r) || r < 0) {
+        errs.restock_threshold = 'Restock threshold must be non-negative';
+      }
+    }
+    if (Object.keys(errs).length > 0) {
+      setEditErrors(errs);
+      return;
+    }
     try {
       const res = await fetch(`http://localhost:5000/inventory/${editingItem.id}`, {
         method: 'PUT',
@@ -60,8 +86,16 @@ function InventoryTable({ refreshFlag }) {
           supplier: editingItem.supplier,
         }),
       });
+      if (res.status === 400) {
+        const data = await res.json();
+        setEditApiError(data.error || 'Invalid input data');
+        return;
+      }
       if (!res.ok) throw new Error('Failed to update');
       setEditingItem(null);
+      setEditErrors({});
+      setEditApiError('');
+      setSuccessMsg('Item updated successfully!');
       fetchItems();
     } catch (err) {
       console.error(err);
@@ -72,6 +106,7 @@ function InventoryTable({ refreshFlag }) {
   return (
     <div className="inventory-table">
       <h2>Inventory</h2>
+      {successMsg && <p className="success-message">{successMsg}</p>}
       <button onClick={fetchItems}>Refresh</button>
       {loading ? (
         <p>Loading...</p>
@@ -112,10 +147,18 @@ function InventoryTable({ refreshFlag }) {
         <div className="modal">
           <div className="modal-content">
             <h3>Edit Item</h3>
+            {editApiError && <div className="error-message">{editApiError}</div>}
             <form onSubmit={handleEditSave}>
               <div>
                 <label>Name:</label>
-                <input name="name" value={editingItem.name} onChange={handleEditChange} required />
+                <input
+                  name="name"
+                  value={editingItem.name}
+                  onChange={handleEditChange}
+                  className={editErrors.name ? 'error-input' : ''}
+                  required
+                />
+                {editErrors.name && <div className="error-message">{editErrors.name}</div>}
               </div>
               <div>
                 <label>Category:</label>
@@ -123,7 +166,15 @@ function InventoryTable({ refreshFlag }) {
               </div>
               <div>
                 <label>Quantity:</label>
-                <input name="quantity" type="number" value={editingItem.quantity} onChange={handleEditChange} required />
+                <input
+                  name="quantity"
+                  type="number"
+                  value={editingItem.quantity}
+                  onChange={handleEditChange}
+                  className={editErrors.quantity ? 'error-input' : ''}
+                  required
+                />
+                {editErrors.quantity && <div className="error-message">{editErrors.quantity}</div>}
               </div>
               <div>
                 <label>Unit:</label>
@@ -131,7 +182,16 @@ function InventoryTable({ refreshFlag }) {
               </div>
               <div>
                 <label>Restock Threshold:</label>
-                <input name="restock_threshold" type="number" value={editingItem.restock_threshold} onChange={handleEditChange} />
+                <input
+                  name="restock_threshold"
+                  type="number"
+                  value={editingItem.restock_threshold}
+                  onChange={handleEditChange}
+                  className={editErrors.restock_threshold ? 'error-input' : ''}
+                />
+                {editErrors.restock_threshold && (
+                  <div className="error-message">{editErrors.restock_threshold}</div>
+                )}
               </div>
               <div>
                 <label>Supplier:</label>
