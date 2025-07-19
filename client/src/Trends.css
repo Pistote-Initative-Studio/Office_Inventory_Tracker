@@ -20,10 +20,6 @@
 }
 
 .range-toggle-container button {
-  background: #f2f2f2;
-  border: none;
-  padding: 0.3rem 0.6rem;
-  cursor: pointer;
   margin-left: 0.5rem;
 }
 
@@ -70,9 +66,16 @@
 }
 .item-table th,
 .item-table td {
-  border: 1px solid #ddd;
+  border: 1px solid #ccc;
   padding: 0.25rem;
   text-align: left;
+}
+.item-table th {
+  background: linear-gradient(to bottom, #ffffff, #e7e7e7);
+}
+
+.item-table tbody tr:hover {
+  background-color: rgba(173, 216, 230, 0.3);
 }
 @media (max-width: 700px) {
   .trends-layout {
