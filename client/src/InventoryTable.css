@@ -47,3 +47,15 @@
 .low-stock {
   background-color: #ffcccc;
 }
+
+.table-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0.5rem 0;
+}
+
+.table-controls input,
+.table-controls select {
+  padding: 0.25rem;
+}
