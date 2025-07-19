@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import './InventoryTable.css';
 import AddItemForm from './AddItemForm';
 
-function InventoryTable({ refreshFlag }) {
+function InventoryTable({ refreshFlag, onInventoryChange }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -64,6 +64,7 @@ function InventoryTable({ refreshFlag }) {
       const res = await fetch(`http://localhost:5000/inventory/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete');
       setItems((prev) => prev.filter((item) => item.id !== id));
+      if (onInventoryChange) onInventoryChange();
     } catch (err) {
       console.error(err);
       alert('Error deleting item');
@@ -128,6 +129,7 @@ function InventoryTable({ refreshFlag }) {
       setEditApiError('');
       setSuccessMsg('Item updated successfully!');
       fetchItems();
+      if (onInventoryChange) onInventoryChange();
     } catch (err) {
       console.error(err);
       alert('Error updating item');
@@ -137,6 +139,7 @@ function InventoryTable({ refreshFlag }) {
   const handleAddSuccess = () => {
     setShowAddModal(false);
     fetchItems();
+    if (onInventoryChange) onInventoryChange();
   };
 
   useEffect(() => {

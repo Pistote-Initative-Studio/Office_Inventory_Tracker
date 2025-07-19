@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import './Purchases.css';
 
-function Purchases() {
+function Purchases({ refreshFlag }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [lowStock, setLowStock] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({
     itemName: '',
@@ -26,9 +27,26 @@ function Purchases() {
     }
   };
 
+  const fetchLowStock = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/inventory');
+      if (!res.ok) throw new Error('Failed to fetch inventory');
+      const data = await res.json();
+      const items = (data.data || []).filter(
+        (it) =>
+          it.restock_threshold != null &&
+          Number(it.quantity) <= Number(it.restock_threshold)
+      );
+      setLowStock(items);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     fetchOrders();
-  }, []);
+    fetchLowStock();
+  }, [refreshFlag]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -59,6 +77,33 @@ function Purchases() {
       <div className="toolbar">
         <button onClick={fetchOrders}>Refresh</button>
         <button onClick={() => setShowModal(true)}>Create Purchase Order</button>
+      </div>
+      <div className="restock-section">
+        <h3>Items Needing Reorder</h3>
+        {lowStock.length === 0 ? (
+          <p>No items require restocking.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Qty</th>
+                <th>Threshold</th>
+              </tr>
+            </thead>
+            <tbody>
+              {lowStock.map((it) => (
+                <tr key={it.id}>
+                  <td>{it.id}</td>
+                  <td>{it.name}</td>
+                  <td>{it.quantity}</td>
+                  <td>{it.restock_threshold}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
       {loading ? (
         <p>Loading...</p>
