@@ -10,3 +10,18 @@
 .add-item-form input {
   padding: 0.25rem;
 }
+
+.error-message {
+  color: red;
+  font-size: 0.85rem;
+}
+
+.success-message {
+  color: green;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.error-input {
+  border: 1px solid red;
+}
