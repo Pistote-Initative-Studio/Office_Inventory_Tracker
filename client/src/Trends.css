@@ -67,3 +67,47 @@
   font-size: 0.8rem;
   margin-top: 0.25rem;
 }
+
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-toggle {
+  padding: 0.3rem 0.6rem;
+  background: #f2f2f2;
+  border: 1px solid #ccc;
+  cursor: pointer;
+}
+
+.dropdown-menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  background: #fff;
+  border: 1px solid #ccc;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.dropdown-menu li {
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+}
+
+.dropdown-menu li.selected {
+  background: #007bff;
+  color: #fff;
+}
+
+.dropdown-menu li:hover {
+  background: #e6e6e6;
+}
+
+.check {
+  margin-left: 0.4rem;
+}

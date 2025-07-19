@@ -99,13 +99,14 @@ const sampleItems = [
 
 function Trends() {
   const [selectedRange, setSelectedRange] = useState('Monthly');
-  const [compare, setCompare] = useState(false);
-  const [selectedIds, setSelectedIds] = useState([sampleItems[0].id]);
+  const [isCompareMode, setIsCompareMode] = useState(false);
+  const [selectedItems, setSelectedItems] = useState([sampleItems[0]]);
+  const [selectedItem, setSelectedItem] = useState(sampleItems[0]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  const displayedItems = useMemo(
-    () => sampleItems.filter((it) => selectedIds.includes(it.id)),
-    [selectedIds]
-  );
+  const displayedItems = useMemo(() => {
+    return isCompareMode ? selectedItems : [selectedItem];
+  }, [isCompareMode, selectedItem, selectedItems]);
 
   const colors = ['#007bff', '#28a745', '#ff5722', '#6f42c1'];
 
@@ -140,12 +141,30 @@ function Trends() {
       ? 'quarterlyTotal'
       : 'yearlyTotal';
 
-  const handleSelectChange = (e) => {
-    if (compare) {
-      const options = Array.from(e.target.selectedOptions).slice(0, 4);
-      setSelectedIds(options.map((o) => Number(o.value)));
+  const handleItemClick = (item) => {
+    if (isCompareMode) {
+      setSelectedItems((prev) => {
+        const exists = prev.some((it) => it.id === item.id);
+        if (exists) {
+          return prev.filter((it) => it.id !== item.id);
+        }
+        if (prev.length >= 4) return prev;
+        return [...prev, item];
+      });
     } else {
-      setSelectedIds([Number(e.target.value)]);
+      setSelectedItem(item);
+      setIsDropdownOpen(false);
+    }
+  };
+
+  const handleCompareChange = (e) => {
+    const checked = e.target.checked;
+    console.log('isCompareMode', checked);
+    setIsCompareMode(checked);
+    if (checked) {
+      setSelectedItems((prev) => (prev.length ? prev : [selectedItem]));
+    } else {
+      setSelectedItem(selectedItems[0] || selectedItem);
     }
   };
 
@@ -168,28 +187,40 @@ function Trends() {
       <div className="trends-layout">
         <div className="trends-left">
           <div className="compare-controls">
-            <select
-              value={compare ? selectedIds.map(String) : String(selectedIds[0])}
-              onChange={handleSelectChange}
-              multiple={compare}
-            >
-              {sampleItems.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
+            <div className="dropdown">
+              <button
+                className="dropdown-toggle"
+                onClick={() => setIsDropdownOpen((prev) => !prev)}
+              >
+                {isCompareMode
+                  ? `${selectedItems.length} item(s) selected`
+                  : selectedItem.name}
+              </button>
+              {isDropdownOpen && (
+                <ul className="dropdown-menu">
+                  {sampleItems.map((item) => {
+                    const isSelected = isCompareMode
+                      ? selectedItems.some((it) => it.id === item.id)
+                      : selectedItem.id === item.id;
+                    return (
+                      <li
+                        key={item.id}
+                        className={isSelected ? 'selected' : ''}
+                        onClick={() => handleItemClick(item)}
+                      >
+                        {item.name}
+                        {isSelected && <span className="check">\u2713</span>}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
             <label className="compare-label">
               <input
                 type="checkbox"
-                checked={compare}
-                onChange={(e) => {
-                  const checked = e.target.checked;
-                  setCompare(checked);
-                  if (!checked) {
-                    setSelectedIds([selectedIds[0] || sampleItems[0].id]);
-                  }
-                }}
+                checked={isCompareMode}
+                onChange={handleCompareChange}
               />
               Compare Items
             </label>
