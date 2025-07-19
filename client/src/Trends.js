@@ -30,29 +30,124 @@ const yearlyData = [
   { label: '2024', value: 950 },
 ];
 
+function scaleData(base, factor) {
+  return base.map((d) => ({ label: d.label, value: Math.round(d.value * factor) }));
+}
+
+const sampleItems = [
+  {
+    id: 1,
+    name: 'Pens',
+    lastPurchaseDate: '2024-05-18',
+    lastAmount: 100,
+    monthlyTotal: 300,
+    quarterlyTotal: 800,
+    yearlyTotal: 2500,
+    monthly: scaleData(monthlyData, 1),
+    quarterly: scaleData(quarterlyData, 1),
+    yearly: scaleData(yearlyData, 1),
+  },
+  {
+    id: 2,
+    name: 'Notebooks',
+    lastPurchaseDate: '2024-05-10',
+    lastAmount: 50,
+    monthlyTotal: 260,
+    quarterlyTotal: 700,
+    yearlyTotal: 2100,
+    monthly: scaleData(monthlyData, 0.8),
+    quarterly: scaleData(quarterlyData, 0.8),
+    yearly: scaleData(yearlyData, 0.8),
+  },
+  {
+    id: 3,
+    name: 'Markers',
+    lastPurchaseDate: '2024-05-22',
+    lastAmount: 30,
+    monthlyTotal: 340,
+    quarterlyTotal: 900,
+    yearlyTotal: 2800,
+    monthly: scaleData(monthlyData, 1.2),
+    quarterly: scaleData(quarterlyData, 1.2),
+    yearly: scaleData(yearlyData, 1.2),
+  },
+  {
+    id: 4,
+    name: 'Staplers',
+    lastPurchaseDate: '2024-05-05',
+    lastAmount: 20,
+    monthlyTotal: 200,
+    quarterlyTotal: 540,
+    yearlyTotal: 1500,
+    monthly: scaleData(monthlyData, 0.6),
+    quarterly: scaleData(quarterlyData, 0.6),
+    yearly: scaleData(yearlyData, 0.6),
+  },
+  {
+    id: 5,
+    name: 'Paper Clips',
+    lastPurchaseDate: '2024-05-15',
+    lastAmount: 200,
+    monthlyTotal: 450,
+    quarterlyTotal: 1100,
+    yearlyTotal: 3300,
+    monthly: scaleData(monthlyData, 1.5),
+    quarterly: scaleData(quarterlyData, 1.5),
+    yearly: scaleData(yearlyData, 1.5),
+  },
+];
+
 function Trends() {
   const [selectedRange, setSelectedRange] = useState('Monthly');
+  const [compare, setCompare] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([sampleItems[0].id]);
 
-  const data = useMemo(() => {
-    if (selectedRange === 'Quarterly') return quarterlyData;
-    if (selectedRange === 'Yearly') return yearlyData;
-    return monthlyData;
-  }, [selectedRange]);
+  const displayedItems = useMemo(
+    () => sampleItems.filter((it) => selectedIds.includes(it.id)),
+    [selectedIds]
+  );
 
-  const points = useMemo(() => {
+  const colors = ['#007bff', '#28a745', '#ff5722', '#6f42c1'];
+
+  const rangeKey = selectedRange.toLowerCase();
+
+  const maxValue = useMemo(() => {
+    return Math.max(
+      ...displayedItems.flatMap((it) => it[rangeKey].map((d) => d.value))
+    );
+  }, [displayedItems, rangeKey]);
+
+  const seriesData = useMemo(() => {
     const width = 600;
-    const height = 160; // leave some padding for labels
-    const max = Math.max(...data.map((d) => d.value));
-    return data.map((d, i) => {
-      const x = (width / (data.length - 1)) * i;
-      const y = height - (d.value / max) * (height - 20) + 10; // vertical padding
-      return [x, y];
+    const height = 160;
+    return displayedItems.map((item, idx) => {
+      const pts = item[rangeKey].map((d, i) => {
+        const x = (width / (item[rangeKey].length - 1)) * i;
+        const y = height - (d.value / maxValue) * (height - 20) + 10;
+        return [x, y];
+      });
+      const path = pts
+        .map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0]},${p[1]}`)
+        .join(' ');
+      return { id: item.id, color: colors[idx % colors.length], pts, path };
     });
-  }, [data]);
+  }, [displayedItems, rangeKey, maxValue]);
 
-  const pathData = points
-    .map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0]},${p[1]}`)
-    .join(' ');
+  const totalKey =
+    selectedRange === 'Monthly'
+      ? 'monthlyTotal'
+      : selectedRange === 'Quarterly'
+      ? 'quarterlyTotal'
+      : 'yearlyTotal';
+
+  const handleSelectChange = (e) => {
+    if (compare) {
+      const options = Array.from(e.target.selectedOptions).slice(0, 4);
+      setSelectedIds(options.map((o) => Number(o.value)));
+    } else {
+      setSelectedIds([Number(e.target.value)]);
+    }
+  };
 
   return (
     <div className="trends-container">
@@ -70,17 +165,87 @@ function Trends() {
           ))}
         </div>
       </div>
-      <div className="trends-placeholder">
-        <svg viewBox="0 0 600 200" width="100%" height="200">
-          <path d={pathData} fill="none" stroke="#007bff" strokeWidth="2" />
-          {points.map((p, i) => (
-            <circle key={i} cx={p[0]} cy={p[1]} r="3" fill="#007bff" />
-          ))}
-        </svg>
-        <div className="x-axis">
-          {data.map((d) => (
-            <span key={d.label}>{d.label}</span>
-          ))}
+      <div className="trends-layout">
+        <div className="trends-left">
+          <div className="compare-controls">
+            <select
+              value={compare ? selectedIds.map(String) : String(selectedIds[0])}
+              onChange={handleSelectChange}
+              multiple={compare}
+            >
+              {sampleItems.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+            <label className="compare-label">
+              <input
+                type="checkbox"
+                checked={compare}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setCompare(checked);
+                  if (!checked) {
+                    setSelectedIds([selectedIds[0] || sampleItems[0].id]);
+                  }
+                }}
+              />
+              Compare Items
+            </label>
+          </div>
+          <table className="item-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Last Purchase Date</th>
+                <th>Last Amount Purchased</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {displayedItems.map((item) => (
+                <tr key={item.id}>
+                  <td>{item.id}</td>
+                  <td>{item.name}</td>
+                  <td>{item.lastPurchaseDate}</td>
+                  <td>{item.lastAmount}</td>
+                  <td>{item[totalKey]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="trends-right">
+          <div className="trends-placeholder">
+            <svg viewBox="0 0 600 200" width="100%" height="200">
+              {seriesData.map((series) => (
+                <g key={series.id}>
+                  <path
+                    d={series.path}
+                    fill="none"
+                    stroke={series.color}
+                    strokeWidth="2"
+                  />
+                  {series.pts.map((p, i) => (
+                    <circle
+                      key={i}
+                      cx={p[0]}
+                      cy={p[1]}
+                      r="3"
+                      fill={series.color}
+                    />
+                  ))}
+                </g>
+              ))}
+            </svg>
+            <div className="x-axis">
+              {(displayedItems[0] || sampleItems[0])[rangeKey].map((d) => (
+                <span key={d.label}>{d.label}</span>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
