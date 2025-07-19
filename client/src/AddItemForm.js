@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './AddItemForm.css';
 
 function AddItemForm({ onSuccess }) {
@@ -13,6 +13,16 @@ function AddItemForm({ onSuccess }) {
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  useEffect(() => {
+    if (successMsg || apiError) {
+      const timer = setTimeout(() => {
+        setSuccessMsg('');
+        setApiError('');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMsg, apiError]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -91,7 +101,9 @@ function AddItemForm({ onSuccess }) {
   return (
     <form className="add-item-form" onSubmit={handleSubmit}>
       <h2>Add New Item</h2>
-      {apiError && <div className="error-message">{apiError}</div>}
+      {apiError && (
+        <div className="status-message error-message">{apiError}</div>
+      )}
       <div>
         <label>Name:</label>
         <input
@@ -141,7 +153,9 @@ function AddItemForm({ onSuccess }) {
         <input name="supplier" value={formData.supplier} onChange={handleChange} />
       </div>
       <button type="submit">Add Item</button>
-      {successMsg && <div className="success-message">{successMsg}</div>}
+      {successMsg && (
+        <div className="status-message success-message">{successMsg}</div>
+      )}
     </form>
   );
 }

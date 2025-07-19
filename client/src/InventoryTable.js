@@ -14,6 +14,16 @@ function InventoryTable({ refreshFlag }) {
   const [filteredData, setFilteredData] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
 
+  useEffect(() => {
+    if (successMsg || editApiError) {
+      const timer = setTimeout(() => {
+        setSuccessMsg('');
+        setEditApiError('');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMsg, editApiError]);
+
   const fetchItems = async () => {
     setLoading(true);
     try {
@@ -145,7 +155,9 @@ function InventoryTable({ refreshFlag }) {
 
   return (
     <div className="inventory-table">
-      {successMsg && <div className="success-message">{successMsg}</div>}
+      {successMsg && (
+        <div className="status-message success-message">{successMsg}</div>
+      )}
       <div className="controls-container">
         <button onClick={fetchItems}>Refresh</button>
         <input
@@ -216,7 +228,9 @@ function InventoryTable({ refreshFlag }) {
         <div className="modal">
           <div className="modal-content">
             <h3>Edit Item</h3>
-            {editApiError && <div className="error-message">{editApiError}</div>}
+            {editApiError && (
+              <div className="status-message error-message">{editApiError}</div>
+            )}
             <form onSubmit={handleEditSave}>
               <div>
                 <label>Name:</label>
