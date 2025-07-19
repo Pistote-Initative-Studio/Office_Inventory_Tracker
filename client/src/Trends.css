@@ -31,6 +31,36 @@
   max-width: 600px;
   margin: 0 auto;
 }
+.trends-layout {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.trends-left,
+.trends-right {
+  flex: 1 1 300px;
+}
+.compare-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.item-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.item-table th,
+.item-table td {
+  border: 1px solid #ddd;
+  padding: 0.25rem;
+  text-align: left;
+}
+@media (max-width: 700px) {
+  .trends-layout {
+    flex-direction: column;
+  }
+}
 .x-axis {
   display: flex;
   justify-content: space-between;
