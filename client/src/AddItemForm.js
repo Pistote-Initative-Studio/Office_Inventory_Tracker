@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './AddItemForm.css';
 
-function AddItemForm({ onAdd }) {
+function AddItemForm({ onSuccess }) {
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -81,7 +81,7 @@ function AddItemForm({ onAdd }) {
       setErrors({});
       setApiError('');
       setSuccessMsg('Item added successfully!');
-      if (onAdd) onAdd();
+      if (onSuccess) onSuccess();
     } catch (err) {
       console.error(err);
       alert('Error adding item');
