@@ -11,7 +11,9 @@ function App() {
 
   return (
     <div className="App">
-      <h1>Office Supply Manager</h1>
+      <header className="app-header">
+        <h1>Office Supply Manager</h1>
+      </header>
       <InventoryTable refreshFlag={refreshFlag} />
     </div>
   );
