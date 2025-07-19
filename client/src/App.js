@@ -1,23 +1,20 @@
-import logo from './logo.svg';
+import React, { useState } from 'react';
 import './App.css';
+import AddItemForm from './AddItemForm';
+import InventoryTable from './InventoryTable';
 
 function App() {
+  const [refreshFlag, setRefreshFlag] = useState(0);
+
+  const triggerRefresh = () => {
+    setRefreshFlag((prev) => prev + 1);
+  };
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <h1>Office Inventory Tracker</h1>
+      <AddItemForm onAdd={triggerRefresh} />
+      <InventoryTable refreshFlag={refreshFlag} />
     </div>
   );
 }
