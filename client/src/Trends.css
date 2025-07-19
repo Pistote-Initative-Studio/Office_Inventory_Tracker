@@ -4,27 +4,35 @@
 
 .trends-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   margin-bottom: 0.5rem;
 }
 
-.range-toggle {
-  display: flex;
-  gap: 0.5rem;
+.trends-subtitle {
+  margin-left: 60px;
 }
 
-.range-toggle button {
+
+.range-toggle-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+  margin-right: 20px;
+}
+
+.range-toggle-container button {
   background: #f2f2f2;
   border: none;
   padding: 0.3rem 0.6rem;
   cursor: pointer;
+  margin-left: 0.5rem;
 }
 
-.range-toggle button.active {
+.range-toggle-container button.active {
   background: #007bff;
   color: white;
 }
+
 
 .trends-placeholder {
   width: 100%;
@@ -40,10 +48,11 @@
 .trends-right {
   flex: 1 1 300px;
 }
-.compare-controls {
+.trends-toolbar {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 10px;
+  margin-left: 10px;
   margin-bottom: 0.5rem;
 }
 .item-table {

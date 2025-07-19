@@ -171,22 +171,11 @@ function Trends() {
   return (
     <div className="trends-container">
       <div className="trends-header">
-        <h2>Purchase Trends Overview</h2>
-        <div className="range-toggle">
-          {['Monthly', 'Quarterly', 'Yearly'].map((range) => (
-            <button
-              key={range}
-              className={selectedRange === range ? 'active' : ''}
-              onClick={() => setSelectedRange(range)}
-            >
-              {range}
-            </button>
-          ))}
-        </div>
+        <h2 className="trends-subtitle">Purchase Trends Overview</h2>
       </div>
       <div className="trends-layout">
         <div className="trends-left">
-          <div className="compare-controls">
+          <div className="trends-toolbar">
             <div className="dropdown">
               <button
                 className="dropdown-toggle"
@@ -251,8 +240,30 @@ function Trends() {
           </table>
         </div>
         <div className="trends-right">
+          <div className="range-toggle-container">
+            {['Monthly', 'Quarterly', 'Yearly'].map((range) => (
+              <button
+                key={range}
+                className={selectedRange === range ? 'active' : ''}
+                onClick={() => setSelectedRange(range)}
+              >
+                {range}
+              </button>
+            ))}
+          </div>
           <div className="trends-placeholder">
             <svg viewBox="0 0 600 200" width="100%" height="200">
+              {[1, 2, 3, 4].map((i) => (
+                <line
+                  key={i}
+                  x1="0"
+                  y1={i * 40}
+                  x2="600"
+                  y2={i * 40}
+                  stroke="#ccc"
+                  strokeDasharray="5 5"
+                />
+              ))}
               {seriesData.map((series) => (
                 <g key={series.id}>
                   <path
