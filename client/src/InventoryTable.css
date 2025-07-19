@@ -39,11 +39,18 @@
   cursor: pointer;
 }
 
+.status-message-container {
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 5px;
+}
+
 .status-message {
   text-align: center;
   width: 100%;
   font-weight: bold;
-  margin-top: 5px;
   animation: fadeIn 0.5s, fadeOut 0.5s 2.5s;
   opacity: 0;
   animation-fill-mode: forwards;
