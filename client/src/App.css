@@ -62,42 +62,48 @@ body {
 .tabs {
   display: flex;
   gap: 1rem;
-  margin-bottom: 1rem;
   margin-left: 1rem;
+  margin-bottom: -1px;
+  position: relative;
+  z-index: 1;
 }
 
 .tab {
   padding: 0.5rem 1rem;
-  background: #ffffff;
-  border: 1px solid #ccc;
+  background: linear-gradient(to bottom, #ffffff, #d0e6f9);
+  border: 1px solid #8cb8e6;
   border-bottom: none;
   border-radius: 6px 6px 0 0;
   cursor: pointer;
   width: var(--tab-width);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  transition: background 0.3s;
+  transition: all 0.3s ease;
+  font-weight: normal;
 }
 
 .tab:hover {
-  background: #e0f0ff;
+  background: linear-gradient(to bottom, #ffffff, #c1e3ff);
 }
 
 .tab.active {
-  background: #e6f0ff;
+  background: linear-gradient(to bottom, #ffffff, #bcd9f4);
   border-color: #7eb4ea;
+  font-weight: bold;
 }
 
 button {
-  background: linear-gradient(to bottom, #ffffff, #e6e6e6);
-  border: 1px solid #ccc;
-  border-radius: 6px;
+  background: linear-gradient(to bottom, #ffffff, #cfe7ff);
+  border-radius: 5px;
+  border: 1px solid #8cb8e6;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   padding: 0.4rem 0.8rem;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: all 0.3s ease;
 }
 
 button:hover {
-  background: linear-gradient(to bottom, #f0faff, #dbefff);
+  background: linear-gradient(to bottom, #f0f8ff, #bcd9f4);
+  box-shadow: 0 0 5px rgba(140, 184, 230, 0.7);
 }
 
 @keyframes App-logo-spin {
@@ -107,4 +113,41 @@ button:hover {
   to {
     transform: rotate(360deg);
   }
+}
+
+.content-box {
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  padding: 20px;
+  width: 95%;
+  margin: 20px auto;
+}
+
+.toolbar {
+  background: linear-gradient(to bottom, #f5faff, #d9eaf9);
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #a7c7e7;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.chart-container {
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  padding: 15px;
+  width: 100%;
+  margin: 0 auto;
+  position: relative;
+}
+
+.toolbar input,
+.toolbar select {
+  padding: 0.25rem;
 }

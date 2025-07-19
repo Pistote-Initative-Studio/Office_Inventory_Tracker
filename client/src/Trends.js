@@ -108,7 +108,7 @@ function Trends() {
     return isCompareMode ? selectedItems : [selectedItem];
   }, [isCompareMode, selectedItem, selectedItems]);
 
-  const colors = ['#007bff', '#28a745', '#ff5722', '#6f42c1'];
+  const colors = ['#3a82ff', '#58c13b', '#ff5722', '#6f42c1'];
 
   const rangeKey = selectedRange.toLowerCase();
 
@@ -175,7 +175,7 @@ function Trends() {
       </div>
       <div className="trends-layout">
         <div className="trends-left">
-          <div className="trends-toolbar">
+          <div className="trends-toolbar toolbar">
             <div className="dropdown">
               <button
                 className="dropdown-toggle"
@@ -240,7 +240,8 @@ function Trends() {
           </table>
         </div>
         <div className="trends-right">
-          <div className="trends-placeholder">
+          <div className="chart-container">
+            <div className="trends-placeholder">
             <div className="time-range-buttons range-toggle-container">
               {['Monthly', 'Quarterly', 'Yearly'].map((range) => (
                 <button
@@ -265,6 +266,18 @@ function Trends() {
                   strokeDasharray="5 5"
                 />
               ))}
+              {/* vertical grid lines */}
+              {[1, 2, 3, 4, 5].map((i) => (
+                <line
+                  key={`v${i}`}
+                  x1={i * 100}
+                  y1="0"
+                  x2={i * 100}
+                  y2="160"
+                  stroke="#ccc"
+                  strokeDasharray="5 5"
+                />
+              ))}
               {/* axis lines */}
               <line x1="0" y1="0" x2="0" y2="160" stroke="#666" />
               <line x1="0" y1="160" x2="600" y2="160" stroke="#666" />
@@ -274,7 +287,7 @@ function Trends() {
                     d={series.path}
                     fill="none"
                     stroke={series.color}
-                    strokeWidth="2"
+                    strokeWidth="3"
                   />
                   {series.pts.map((p, i) => (
                     <circle
@@ -297,6 +310,7 @@ function Trends() {
         </div>
       </div>
     </div>
+  </div>
   );
 }
 

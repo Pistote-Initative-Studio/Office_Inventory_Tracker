@@ -163,7 +163,7 @@ function InventoryTable({ refreshFlag }) {
           <div className={`status-message ${statusType}`}>{statusMessage}</div>
         )}
       </div>
-      <div className="controls-container">
+      <div className="toolbar">
         <button onClick={fetchItems}>Refresh</button>
         <input
           type="text"
