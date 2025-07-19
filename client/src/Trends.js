@@ -209,7 +209,9 @@ function Trends() {
                         onClick={() => handleItemClick(item)}
                       >
                         {item.name}
-                        {isSelected && <span className="check">\u2713</span>}
+                        {isSelected && (
+                          <span className="checkmark" aria-hidden="true">✓</span>
+                        )}
                       </li>
                     );
                   })}

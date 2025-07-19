@@ -108,6 +108,8 @@
   background: #e6e6e6;
 }
 
-.check {
+.checkmark {
   margin-left: 0.4rem;
+  font-weight: bold;
+  color: green;
 }
