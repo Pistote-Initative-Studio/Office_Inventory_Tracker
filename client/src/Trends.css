@@ -1,0 +1,39 @@
+.trends-container {
+  margin-top: 1rem;
+}
+
+.trends-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.range-toggle {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.range-toggle button {
+  background: #f2f2f2;
+  border: none;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+}
+
+.range-toggle button.active {
+  background: #007bff;
+  color: white;
+}
+
+.trends-placeholder {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.x-axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
