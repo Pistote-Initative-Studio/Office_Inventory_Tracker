@@ -12,6 +12,7 @@ function Purchases() {
     notes: '',
   });
   const [statusMsg, setStatusMsg] = useState('');
+  const [pdfLink, setPdfLink] = useState('');
 
   const fetchItems = async () => {
     setLoading(true);
@@ -52,6 +53,7 @@ function Purchases() {
       notes: '',
     });
     setStatusMsg('');
+    setPdfLink('');
     setShowModal(true);
   };
 
@@ -60,10 +62,26 @@ function Purchases() {
     setOrderData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const confirmOrder = () => {
-    setShowModal(false);
-    setStatusMsg('Purchase order created!');
-    setTimeout(() => setStatusMsg(''), 3000);
+  const confirmOrder = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/purchase-orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData),
+      });
+      if (!res.ok) throw new Error('Failed to create order');
+      const data = await res.json();
+      setPdfLink(
+        `http://localhost:5000/api/purchase-orders/${data.id}/pdf`
+      );
+      setStatusMsg('Purchase order created!');
+    } catch (err) {
+      console.error(err);
+      setStatusMsg('Failed to create order');
+    } finally {
+      setShowModal(false);
+      setTimeout(() => setStatusMsg(''), 3000);
+    }
   };
 
   return (
@@ -73,7 +91,14 @@ function Purchases() {
         <button onClick={openModal}>Create Purchase Order</button>
       </div>
       {statusMsg && (
-        <div className="status-message success-message">{statusMsg}</div>
+        <div className="status-message success-message">
+          {statusMsg}{' '}
+          {pdfLink && (
+            <a href={pdfLink} target="_blank" rel="noopener noreferrer">
+              Download PDF
+            </a>
+          )}
+        </div>
       )}
       {loading ? (
         <p>Loading...</p>

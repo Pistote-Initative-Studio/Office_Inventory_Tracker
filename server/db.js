@@ -11,7 +11,7 @@ const db = new sqlite3.Database(path.join(__dirname, 'inventory.db'), (err) => {
 });
 
 // Create the inventory table if it doesn't exist
-const createTableQuery = `CREATE TABLE IF NOT EXISTS inventory (
+const createInventoryQuery = `CREATE TABLE IF NOT EXISTS inventory (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   category TEXT,
@@ -21,11 +21,22 @@ const createTableQuery = `CREATE TABLE IF NOT EXISTS inventory (
   supplier TEXT
 )`;
 
+// Create purchaseOrders table if it doesn't exist
+const createOrdersQuery = `CREATE TABLE IF NOT EXISTS purchaseOrders (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  date TEXT,
+  item TEXT,
+  quantity INTEGER,
+  supplier TEXT,
+  notes TEXT
+)`;
+
 // Ensure the table exists and populate it with sample data on first run
 // `serialize` ensures that the queries run sequentially
 
 db.serialize(() => {
-  db.run(createTableQuery);
+  db.run(createInventoryQuery);
+  db.run(createOrdersQuery);
 
   db.get('SELECT COUNT(*) AS count FROM inventory', (err, row) => {
     if (err) {
