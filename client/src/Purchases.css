@@ -26,6 +26,10 @@
   background: #eaf4ff;
 }
 
+.restock-section {
+  margin-bottom: 1.5rem;
+}
+
 
 .modal {
   position: fixed;

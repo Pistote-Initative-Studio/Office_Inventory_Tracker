@@ -5,11 +5,11 @@ import Purchases from './Purchases';
 import Trends from './Trends';
 
 function App() {
-  const [refreshFlag, setRefreshFlag] = useState(0);
+  const [inventoryFlag, setInventoryFlag] = useState(0);
   const [activeTab, setActiveTab] = useState('Inventory');
 
-  const triggerRefresh = () => {
-    setRefreshFlag((prev) => prev + 1);
+  const triggerInventoryChange = () => {
+    setInventoryFlag((prev) => prev + 1);
   };
 
   return (
@@ -40,12 +40,15 @@ function App() {
       <div className="tab-content">
         {activeTab === 'Inventory' && (
           <div className="content-box">
-            <InventoryTable refreshFlag={refreshFlag} />
+            <InventoryTable
+              refreshFlag={inventoryFlag}
+              onInventoryChange={triggerInventoryChange}
+            />
           </div>
         )}
         {activeTab === 'Purchases' && (
           <div className="content-box">
-            <Purchases />
+            <Purchases refreshFlag={inventoryFlag} />
           </div>
         )}
         {activeTab === 'Trends' && (
