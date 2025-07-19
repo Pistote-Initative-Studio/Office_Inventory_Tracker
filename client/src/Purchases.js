@@ -6,12 +6,10 @@ function Purchases({ refreshFlag }) {
   const [loading, setLoading] = useState(false);
   const [lowStock, setLowStock] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({
-    itemName: '',
-    quantity: '',
-    supplier: '',
-    notes: '',
-  });
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [autoItems, setAutoItems] = useState([]);
+  const [customItems, setCustomItems] = useState([]);
+  const [notes, setNotes] = useState('');
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -48,17 +46,47 @@ function Purchases({ refreshFlag }) {
     fetchLowStock();
   }, [refreshFlag]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+  useEffect(() => {
+    if (showModal) fetchLowStock();
+  }, [showModal]);
+
+  useEffect(() => {
+    const selected = lowStock.filter((it) => selectedIds.includes(it.id.toString()));
+    const mapped = selected.map((it) => ({
+      itemName: it.name,
+      quantity: Math.max(Number(it.restock_threshold) - Number(it.quantity), 1),
+      supplier: it.supplier || '',
+    }));
+    setAutoItems(mapped);
+  }, [selectedIds, lowStock]);
+
+  const handleNotesChange = (e) => setNotes(e.target.value);
+
+  const handleAutoItemChange = (index, field, value) => {
+    setAutoItems((prev) =>
+      prev.map((it, i) => (i === index ? { ...it, [field]: value } : it))
+    );
+  };
+
+  const handleCustomItemChange = (index, field, value) => {
+    setCustomItems((prev) =>
+      prev.map((it, i) => (i === index ? { ...it, [field]: value } : it))
+    );
+  };
+
+  const addCustomItem = () => {
+    setCustomItems((prev) => [...prev, { itemName: '', quantity: '', supplier: '' }]);
   };
 
   const createOrder = async () => {
+    const items = [...autoItems, ...customItems].filter(
+      (it) => it.itemName && it.quantity
+    );
     try {
       const res = await fetch('http://localhost:5000/api/purchase-orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ items, notes }),
       });
       if (!res.ok) throw new Error('Failed to create order');
       await res.json();
@@ -68,7 +96,10 @@ function Purchases({ refreshFlag }) {
       alert('Error creating order');
     } finally {
       setShowModal(false);
-      setForm({ itemName: '', quantity: '', supplier: '', notes: '' });
+      setSelectedIds([]);
+      setAutoItems([]);
+      setCustomItems([]);
+      setNotes('');
     }
   };
 
@@ -123,9 +154,21 @@ function Purchases({ refreshFlag }) {
             {orders.map((order) => (
               <tr key={order.id}>
                 <td>{order.id}</td>
-                <td>{order.itemName}</td>
-                <td>{order.quantity}</td>
-                <td>{order.supplier}</td>
+                <td>
+                  {order.items
+                    ? order.items.map((i) => i.itemName).join(', ')
+                    : order.itemName}
+                </td>
+                <td>
+                  {order.items
+                    ? order.items.map((i) => i.quantity).join(', ')
+                    : order.quantity}
+                </td>
+                <td>
+                  {order.items
+                    ? order.items.map((i) => i.supplier).join(', ')
+                    : order.supplier}
+                </td>
                 <td>{order.orderDate}</td>
                 <td>
                   <a
@@ -152,35 +195,91 @@ function Purchases({ refreshFlag }) {
               }}
             >
               <div>
-                <label>Item:</label>
-                <input
-                  name="itemName"
-                  value={form.itemName}
-                  onChange={handleChange}
-                  required
-                />
+                <label>Select Items Needing Reorder:</label>
+                <select
+                  multiple
+                  value={selectedIds}
+                  onChange={(e) =>
+                    setSelectedIds(Array.from(e.target.selectedOptions).map((o) => o.value))
+                  }
+                >
+                  {lowStock.map((it) => (
+                    <option key={it.id} value={it.id}>
+                      {it.name}
+                    </option>
+                  ))}
+                </select>
               </div>
-              <div>
-                <label>Quantity:</label>
-                <input
-                  name="quantity"
-                  type="number"
-                  value={form.quantity}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div>
-                <label>Supplier:</label>
-                <input
-                  name="supplier"
-                  value={form.supplier}
-                  onChange={handleChange}
-                />
-              </div>
+              {autoItems.length > 0 || customItems.length > 0 ? (
+                <table className="order-items-table">
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th>Quantity</th>
+                      <th>Supplier</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {autoItems.map((it, idx) => (
+                      <tr key={`auto-${idx}`}>
+                        <td>{it.itemName}</td>
+                        <td>
+                          <input
+                            type="number"
+                            value={it.quantity}
+                            onChange={(e) =>
+                              handleAutoItemChange(idx, 'quantity', e.target.value)
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
+                            value={it.supplier}
+                            onChange={(e) =>
+                              handleAutoItemChange(idx, 'supplier', e.target.value)
+                            }
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                    {customItems.map((it, idx) => (
+                      <tr key={`custom-${idx}`}>
+                        <td>
+                          <input
+                            value={it.itemName}
+                            onChange={(e) =>
+                              handleCustomItemChange(idx, 'itemName', e.target.value)
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            value={it.quantity}
+                            onChange={(e) =>
+                              handleCustomItemChange(idx, 'quantity', e.target.value)
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
+                            value={it.supplier}
+                            onChange={(e) =>
+                              handleCustomItemChange(idx, 'supplier', e.target.value)
+                            }
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : null}
+              <button type="button" onClick={addCustomItem}>
+                Add Custom Item
+              </button>
               <div>
                 <label>Notes:</label>
-                <textarea name="notes" value={form.notes} onChange={handleChange} />
+                <textarea value={notes} onChange={handleNotesChange} />
               </div>
               <button type="submit">Submit</button>
               <button type="button" onClick={() => setShowModal(false)}>

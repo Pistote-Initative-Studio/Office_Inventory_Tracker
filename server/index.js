@@ -47,12 +47,15 @@ app.use('/inventory', inventoryRoutes);
 
 // POST /api/purchase-orders -> create a purchase order and generate PDF
 app.post('/api/purchase-orders', async (req, res) => {
-  const { itemName, quantity, supplier, notes, orderDate } = req.body;
+  const { items, itemName, quantity, supplier, notes, orderDate } = req.body;
   try {
+    const orderItems = Array.isArray(items)
+      ? items
+      : [{ itemName, quantity, supplier }];
     const date = orderDate || new Date().toISOString();
     const result = await runAsync(
-      'INSERT INTO purchaseOrders (itemName, quantity, supplier, notes, orderDate) VALUES (?, ?, ?, ?, ?)',
-      [itemName, quantity, supplier, notes, date]
+      'INSERT INTO purchaseOrders (itemName, quantity, supplier, notes, orderDate, items) VALUES (?, ?, ?, ?, ?, ?)',
+      [itemName || null, quantity || null, supplier || null, notes, date, JSON.stringify(orderItems)]
     );
     const id = result.lastID;
 
@@ -66,10 +69,12 @@ app.post('/api/purchase-orders', async (req, res) => {
       doc.text(`Order ID: ${id}`);
       doc.text(`Date: ${date}`);
       doc.moveDown();
-      doc.text(`Item: ${itemName}`);
-      doc.text(`Quantity: ${quantity}`);
-      doc.text(`Supplier: ${supplier}`);
-      doc.moveDown();
+      orderItems.forEach((it, idx) => {
+        doc.text(`${idx + 1}. Item: ${it.itemName}`);
+        doc.text(`   Qty: ${it.quantity}`);
+        doc.text(`   Supplier: ${it.supplier}`);
+        doc.moveDown();
+      });
       doc.text('Notes:');
       doc.text(notes || '');
       doc.end();
@@ -88,7 +93,11 @@ app.post('/api/purchase-orders', async (req, res) => {
 app.get('/api/purchase-orders', async (req, res) => {
   try {
     const rows = await allAsync('SELECT * FROM purchaseOrders ORDER BY id DESC');
-    res.json({ success: true, data: rows });
+    const parsed = rows.map((r) => ({
+      ...r,
+      items: r.items ? JSON.parse(r.items) : null,
+    }));
+    res.json({ success: true, data: parsed });
   } catch (err) {
     console.error('Failed to retrieve purchase orders:', err.message);
     res.status(500).json({ success: false, error: 'Server error' });

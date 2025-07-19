@@ -28,7 +28,8 @@ const createOrdersQuery = `CREATE TABLE IF NOT EXISTS purchaseOrders (
   quantity INTEGER,
   supplier TEXT,
   notes TEXT,
-  orderDate TEXT
+  orderDate TEXT,
+  items TEXT
 )`;
 
 // Ensure the table exists and populate it with sample data on first run
@@ -37,6 +38,10 @@ const createOrdersQuery = `CREATE TABLE IF NOT EXISTS purchaseOrders (
 db.serialize(() => {
   db.run(createInventoryQuery);
   db.run(createOrdersQuery);
+  // Add the items column if it was created before this field existed
+  db.run('ALTER TABLE purchaseOrders ADD COLUMN items TEXT', (err) => {
+    // ignore errors if column already exists
+  });
 
   db.get('SELECT COUNT(*) AS count FROM inventory', (err, row) => {
     if (err) {

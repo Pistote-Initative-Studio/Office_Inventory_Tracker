@@ -71,6 +71,17 @@
   font-size: 0.85rem;
 }
 
+.order-items-table {
+  margin-top: 0.5rem;
+  width: 100%;
+  border-collapse: collapse;
+}
+.order-items-table th,
+.order-items-table td {
+  border: 1px solid #ccc;
+  padding: 4px;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
