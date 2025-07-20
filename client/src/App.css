@@ -62,10 +62,12 @@ body {
 .tabs {
   display: flex;
   gap: 1rem;
-  margin-left: 1rem;
-  margin-bottom: -1px;
+  width: 100%;
+  max-width: 95%;
+  margin: 0 auto;
+  padding-left: 20px;
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 .tab {
@@ -79,16 +81,22 @@ body {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
   font-weight: normal;
+  position: relative;
+  top: 3px;
+  z-index: 1;
 }
 
 .tab:hover {
-  background: linear-gradient(to bottom, #ffffff, #c1e3ff);
+  background: linear-gradient(to bottom, #f2f2f2, #b7d2f0);
 }
 
 .tab.active {
-  background: linear-gradient(to bottom, #ffffff, #bcd9f4);
-  border-color: #7eb4ea;
+  background: rgba(255, 255, 255, 0.8);
+  border: none;
+  box-shadow: none;
   font-weight: bold;
+  top: 0;
+  z-index: 3;
 }
 
 button {
@@ -123,7 +131,7 @@ button:hover {
   box-sizing: border-box;
   width: 100%;
   max-width: 95%;
-  margin: 20px auto;
+  margin: 0 auto 20px;
 }
 
 .toolbar {
