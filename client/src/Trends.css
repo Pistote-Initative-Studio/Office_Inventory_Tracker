@@ -15,11 +15,10 @@
 
 .range-toggle-container {
   display: flex;
-  justify-content: flex-end;
   margin: 0;
 }
 
-.range-toggle-container button {
+.range-toggle-container button + button {
   margin-left: 0.5rem;
 }
 
@@ -29,12 +28,17 @@
 }
 
 .time-range-buttons {
-  position: absolute;
-  top: 0;
-  right: 0;
-  margin: 5px 10px 0 0;
   display: flex;
   gap: 5px;
+  margin: 0;
+}
+
+.chart-top-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
 }
 
 

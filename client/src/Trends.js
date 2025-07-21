@@ -258,7 +258,8 @@ function Trends({ mode = 'Quantity', onModeChange }) {
         <div className="trends-right">
           <div className="chart-container">
             <div className="trends-placeholder">
-            <div className="range-toggle-container">
+            <div className="chart-top-controls">
+              <div className="range-toggle-container">
               {['Quantity', 'Price'].map((m) => (
                 <button
                   key={m}
@@ -268,8 +269,8 @@ function Trends({ mode = 'Quantity', onModeChange }) {
                   {m}
                 </button>
               ))}
-            </div>
-            <div className="time-range-buttons range-toggle-container">
+              </div>
+              <div className="time-range-buttons range-toggle-container">
               {['Monthly', 'Quarterly', 'Yearly'].map((range) => (
                 <button
                   key={range}
@@ -279,6 +280,7 @@ function Trends({ mode = 'Quantity', onModeChange }) {
                   {range}
                 </button>
               ))}
+              </div>
             </div>
             <svg viewBox="0 0 600 200" width="100%" height="200">
               {/* horizontal grid lines */}
