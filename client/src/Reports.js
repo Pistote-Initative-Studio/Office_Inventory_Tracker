@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import './App.css';
+import './Reports.css';
 
 function Reports() {
   const [orders, setOrders] = useState([]);
@@ -8,6 +9,9 @@ function Reports() {
   const [items, setItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState('');
   const [itemData, setItemData] = useState([]);
+
+  const formatCurrency = (val) =>
+    typeof val === 'number' ? `$${val.toFixed(2)}` : `$${Number(val || 0).toFixed(2)}`;
 
   const fetchOrders = async () => {
     let url = `http://localhost:5000/api/reports/purchase-orders?startDate=${startDate}&endDate=${endDate}`;
@@ -53,7 +57,7 @@ function Reports() {
   };
 
   return (
-    <div>
+    <div className="reports-container">
       <h3>Purchase Orders Report</h3>
       <div className="toolbar">
         <label>
@@ -84,7 +88,7 @@ function Reports() {
               <td>{o.supplier}</td>
               <td>{o.items ? o.items.map((i) => i.itemName).join(', ') : o.itemName}</td>
               <td>{o.items ? o.items.map((i) => i.quantity).join(', ') : o.quantity}</td>
-              <td>{o.price}</td>
+              <td>{formatCurrency(o.price)}</td>
             </tr>
           ))}
         </tbody>
@@ -106,7 +110,8 @@ function Reports() {
             <tr>
               <th>Date</th>
               <th>Supplier</th>
-              <th>Price</th>
+              <th>Unit Price</th>
+              <th>Total Price</th>
               <th>Quantity</th>
             </tr>
           </thead>
@@ -121,11 +126,13 @@ function Reports() {
                 qty = it.quantity;
                 supplier = it.supplier;
               }
+              const unit = qty ? price / qty : 0;
               return (
                 <tr key={idx}>
                   <td>{r.orderDate}</td>
                   <td>{supplier}</td>
-                  <td>{price}</td>
+                  <td>{formatCurrency(unit)}</td>
+                  <td>{formatCurrency(price)}</td>
                   <td>{qty}</td>
                 </tr>
               );
