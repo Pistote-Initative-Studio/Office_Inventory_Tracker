@@ -10,6 +10,7 @@ function Purchases({ refreshFlag }) {
   const [autoItems, setAutoItems] = useState([]);
   const [customItems, setCustomItems] = useState([]);
   const [notes, setNotes] = useState('');
+  const [lastPrices, setLastPrices] = useState({});
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -17,7 +18,19 @@ function Purchases({ refreshFlag }) {
       const res = await fetch('http://localhost:5000/api/purchase-orders');
       if (!res.ok) throw new Error('Failed to fetch orders');
       const data = await res.json();
-      setOrders(data.data || []);
+      const list = data.data || [];
+      setOrders(list);
+      const priceMap = {};
+      list.forEach((o) => {
+        if (o.items) {
+          o.items.forEach((it) => {
+            if (!priceMap[it.itemName]) priceMap[it.itemName] = it.price;
+          });
+        } else if (o.itemName) {
+          if (!priceMap[o.itemName]) priceMap[o.itemName] = o.price;
+        }
+      });
+      setLastPrices(priceMap);
     } catch (err) {
       console.error(err);
     } finally {
@@ -121,6 +134,7 @@ function Purchases({ refreshFlag }) {
                 <th>Name</th>
                 <th>Qty</th>
                 <th>Threshold</th>
+                <th>Last Purchase Price</th>
               </tr>
             </thead>
             <tbody>
@@ -130,6 +144,7 @@ function Purchases({ refreshFlag }) {
                   <td>{it.name}</td>
                   <td>{it.quantity}</td>
                   <td>{it.restock_threshold}</td>
+                  <td>{lastPrices[it.name] || '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -217,6 +232,7 @@ function Purchases({ refreshFlag }) {
                       <th>Item</th>
                       <th>Quantity</th>
                       <th>Supplier</th>
+                      <th>Price</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -237,6 +253,15 @@ function Purchases({ refreshFlag }) {
                             value={it.supplier}
                             onChange={(e) =>
                               handleAutoItemChange(idx, 'supplier', e.target.value)
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            value={it.price || ''}
+                            onChange={(e) =>
+                              handleAutoItemChange(idx, 'price', e.target.value)
                             }
                           />
                         </td>
@@ -266,6 +291,15 @@ function Purchases({ refreshFlag }) {
                             value={it.supplier}
                             onChange={(e) =>
                               handleCustomItemChange(idx, 'supplier', e.target.value)
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            value={it.price || ''}
+                            onChange={(e) =>
+                              handleCustomItemChange(idx, 'price', e.target.value)
                             }
                           />
                         </td>
