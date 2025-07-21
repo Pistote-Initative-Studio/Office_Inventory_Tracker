@@ -13,6 +13,7 @@ function Purchases({ refreshFlag }) {
   const [lastPrices, setLastPrices] = useState({});
   const [sortLow, setSortLow] = useState({ key: '', direction: 'asc' });
   const [sortOrders, setSortOrders] = useState({ key: '', direction: 'asc' });
+  const [searchTerm, setSearchTerm] = useState('');
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -100,8 +101,42 @@ function Purchases({ refreshFlag }) {
     return data;
   }, [lowStock, sortLow]);
 
+  const computeTotalPrice = (order) => {
+    if (order.items) {
+      return order.items.reduce((sum, it) => {
+        const qty = Number(it.quantity) || 0;
+        const price = Number(it.price) || 0;
+        return sum + qty * price;
+      }, 0);
+    }
+    const qty = Number(order.quantity) || 0;
+    const price = Number(order.price) || 0;
+    return qty * price;
+  };
+
+  const filteredOrders = React.useMemo(() => {
+    if (!searchTerm.trim()) return orders;
+    const term = searchTerm.toLowerCase();
+    return orders.filter((o) => {
+      const itemNames = o.items
+        ? o.items.map((i) => i.itemName).join(', ')
+        : o.itemName || '';
+      const suppliers = o.items
+        ? o.items.map((i) => i.supplier).join(', ')
+        : o.supplier || '';
+      const total = computeTotalPrice(o).toFixed(2);
+      return (
+        String(o.id).includes(term) ||
+        itemNames.toLowerCase().includes(term) ||
+        suppliers.toLowerCase().includes(term) ||
+        (o.orderDate && o.orderDate.toLowerCase().includes(term)) ||
+        (`$${total}`).includes(term)
+      );
+    });
+  }, [orders, searchTerm]);
+
   const sortedOrders = React.useMemo(() => {
-    const data = [...orders];
+    const data = [...filteredOrders];
     const getVal = (o, key) => {
       if (key === 'itemName') {
         return o.items ? o.items.map((i) => i.itemName).join(', ') : o.itemName;
@@ -113,6 +148,9 @@ function Purchases({ refreshFlag }) {
       }
       if (key === 'supplier') {
         return o.items ? o.items.map((i) => i.supplier).join(', ') : o.supplier;
+      }
+      if (key === 'totalPrice') {
+        return computeTotalPrice(o);
       }
       return o[key];
     };
@@ -131,7 +169,7 @@ function Purchases({ refreshFlag }) {
       });
     }
     return data;
-  }, [orders, sortOrders]);
+  }, [filteredOrders, sortOrders]);
 
   const handleLowSort = (key) => {
     setSortLow((prev) => {
@@ -198,6 +236,12 @@ function Purchases({ refreshFlag }) {
     <div className="purchases-container">
       <div className="toolbar">
         <button onClick={fetchOrders}>Refresh</button>
+        <input
+          type="text"
+          placeholder="Search..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
         <button onClick={() => setShowModal(true)}>Create Purchase Order</button>
       </div>
       <div className="restock-section">
@@ -311,6 +355,14 @@ function Purchases({ refreshFlag }) {
                   </span>
                 )}
               </th>
+              <th onClick={() => handleOrderSort('totalPrice')}>
+                Total Price
+                {sortOrders.key === 'totalPrice' && (
+                  <span className="sort-indicator">
+                    {sortOrders.direction === 'asc' ? '▲' : '▼'}
+                  </span>
+                )}
+              </th>
               <th>PDF</th>
             </tr>
           </thead>
@@ -334,6 +386,7 @@ function Purchases({ refreshFlag }) {
                     : order.supplier}
                 </td>
                 <td>{order.orderDate}</td>
+                <td>{`$${computeTotalPrice(order).toFixed(2)}`}</td>
                 <td>
                   <a
                     href={`http://localhost:5000/api/purchase-orders/${order.id}/pdf`}
