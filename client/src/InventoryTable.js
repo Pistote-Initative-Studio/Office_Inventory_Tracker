@@ -13,6 +13,7 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [filteredData, setFilteredData] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [sortConfig, setSortConfig] = useState({ key: '', direction: 'asc' });
 
   useEffect(() => {
     if (successMsg || editApiError) {
@@ -58,6 +59,34 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
     }
     setFilteredData(data);
   }, [items, searchTerm, selectedCategory]);
+
+  const sortedData = React.useMemo(() => {
+    const data = [...filteredData];
+    if (sortConfig.key) {
+      data.sort((a, b) => {
+        const aVal = a[sortConfig.key];
+        const bVal = b[sortConfig.key];
+        if (aVal == null) return 1;
+        if (bVal == null) return -1;
+        if (typeof aVal === 'number' && typeof bVal === 'number') {
+          return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
+        }
+        return sortConfig.direction === 'asc'
+          ? String(aVal).localeCompare(String(bVal))
+          : String(bVal).localeCompare(String(aVal));
+      });
+    }
+    return data;
+  }, [filteredData, sortConfig]);
+
+  const handleSort = (key) => {
+    setSortConfig((prev) => {
+      if (prev.key === key) {
+        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+  };
 
   const handleDelete = async (id) => {
     try {
@@ -195,18 +224,67 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
         <table>
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Category</th>
-              <th>Quantity</th>
-              <th>Unit</th>
-              <th>Restock Threshold</th>
-              <th>Supplier</th>
+              <th onClick={() => handleSort('id')}>
+                ID
+                {sortConfig.key === 'id' && (
+                  <span className="sort-indicator">
+                    {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                  </span>
+                )}
+              </th>
+              <th onClick={() => handleSort('name')}>
+                Name
+                {sortConfig.key === 'name' && (
+                  <span className="sort-indicator">
+                    {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                  </span>
+                )}
+              </th>
+              <th onClick={() => handleSort('category')}>
+                Category
+                {sortConfig.key === 'category' && (
+                  <span className="sort-indicator">
+                    {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                  </span>
+                )}
+              </th>
+              <th onClick={() => handleSort('quantity')}>
+                Quantity
+                {sortConfig.key === 'quantity' && (
+                  <span className="sort-indicator">
+                    {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                  </span>
+                )}
+              </th>
+              <th onClick={() => handleSort('unit')}>
+                Unit
+                {sortConfig.key === 'unit' && (
+                  <span className="sort-indicator">
+                    {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                  </span>
+                )}
+              </th>
+              <th onClick={() => handleSort('restock_threshold')}>
+                Restock Threshold
+                {sortConfig.key === 'restock_threshold' && (
+                  <span className="sort-indicator">
+                    {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                  </span>
+                )}
+              </th>
+              <th onClick={() => handleSort('supplier')}>
+                Supplier
+                {sortConfig.key === 'supplier' && (
+                  <span className="sort-indicator">
+                    {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                  </span>
+                )}
+              </th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {filteredData.map((item) => (
+            {sortedData.map((item) => (
               <tr
                 key={item.id}
                 className={

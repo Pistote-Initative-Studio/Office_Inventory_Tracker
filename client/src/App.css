@@ -163,3 +163,8 @@ button:hover {
 .toolbar select {
   padding: 0.25rem;
 }
+
+.sort-indicator {
+  margin-left: 4px;
+  font-size: 0.75em;
+}
