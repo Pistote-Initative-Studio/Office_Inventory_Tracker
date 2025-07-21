@@ -118,10 +118,30 @@ function Trends({ mode = 'Quantity', onModeChange }) {
   const [selectedItems, setSelectedItems] = useState([sampleItems[0]]);
   const [selectedItem, setSelectedItem] = useState(sampleItems[0]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [sortConfig, setSortConfig] = useState({ key: '', direction: 'asc' });
 
   const displayedItems = useMemo(() => {
     return isCompareMode ? selectedItems : [selectedItem];
   }, [isCompareMode, selectedItem, selectedItems]);
+
+  const sortedItems = useMemo(() => {
+    const data = [...displayedItems];
+    if (sortConfig.key) {
+      data.sort((a, b) => {
+        const aVal = a[sortConfig.key];
+        const bVal = b[sortConfig.key];
+        if (aVal == null) return 1;
+        if (bVal == null) return -1;
+        if (typeof aVal === 'number' && typeof bVal === 'number') {
+          return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
+        }
+        return sortConfig.direction === 'asc'
+          ? String(aVal).localeCompare(String(bVal))
+          : String(bVal).localeCompare(String(aVal));
+      });
+    }
+    return data;
+  }, [displayedItems, sortConfig]);
 
   const colors = ['#3a82ff', '#58c13b', '#ff5722', '#6f42c1'];
 
@@ -171,6 +191,15 @@ function Trends({ mode = 'Quantity', onModeChange }) {
       setSelectedItem(item);
       setIsDropdownOpen(false);
     }
+  };
+
+  const handleSort = (key) => {
+    setSortConfig((prev) => {
+      if (prev.key === key) {
+        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
   };
 
   const handleCompareChange = (e) => {
@@ -235,15 +264,50 @@ function Trends({ mode = 'Quantity', onModeChange }) {
           <table className="item-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Last Purchase Date</th>
-                <th>Last Amount Purchased</th>
-                <th>Total</th>
+                <th onClick={() => handleSort('id')}>
+                  ID
+                  {sortConfig.key === 'id' && (
+                    <span className="sort-indicator">
+                      {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                    </span>
+                  )}
+                </th>
+                <th onClick={() => handleSort('name')}>
+                  Name
+                  {sortConfig.key === 'name' && (
+                    <span className="sort-indicator">
+                      {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                    </span>
+                  )}
+                </th>
+                <th onClick={() => handleSort('lastPurchaseDate')}>
+                  Last Purchase Date
+                  {sortConfig.key === 'lastPurchaseDate' && (
+                    <span className="sort-indicator">
+                      {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                    </span>
+                  )}
+                </th>
+                <th onClick={() => handleSort('lastAmount')}>
+                  Last Amount Purchased
+                  {sortConfig.key === 'lastAmount' && (
+                    <span className="sort-indicator">
+                      {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                    </span>
+                  )}
+                </th>
+                <th onClick={() => handleSort(totalKey)}>
+                  Total
+                  {sortConfig.key === totalKey && (
+                    <span className="sort-indicator">
+                      {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                    </span>
+                  )}
+                </th>
               </tr>
             </thead>
             <tbody>
-              {displayedItems.map((item) => (
+              {sortedItems.map((item) => (
                 <tr key={item.id}>
                   <td>{item.id}</td>
                   <td>{item.name}</td>

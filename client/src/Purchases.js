@@ -11,6 +11,8 @@ function Purchases({ refreshFlag }) {
   const [customItems, setCustomItems] = useState([]);
   const [notes, setNotes] = useState('');
   const [lastPrices, setLastPrices] = useState({});
+  const [sortLow, setSortLow] = useState({ key: '', direction: 'asc' });
+  const [sortOrders, setSortOrders] = useState({ key: '', direction: 'asc' });
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -73,6 +75,82 @@ function Purchases({ refreshFlag }) {
     setAutoItems(mapped);
   }, [selectedIds, lowStock]);
 
+  const sortedLowStock = React.useMemo(() => {
+    const data = [...lowStock];
+    if (sortLow.key) {
+      data.sort((a, b) => {
+        const getVal = (row) => {
+          if (sortLow.key === 'price') {
+            return lastPrices[row.name] || 0;
+          }
+          return row[sortLow.key];
+        };
+        const aVal = getVal(a);
+        const bVal = getVal(b);
+        if (aVal == null) return 1;
+        if (bVal == null) return -1;
+        if (typeof aVal === 'number' && typeof bVal === 'number') {
+          return sortLow.direction === 'asc' ? aVal - bVal : bVal - aVal;
+        }
+        return sortLow.direction === 'asc'
+          ? String(aVal).localeCompare(String(bVal))
+          : String(bVal).localeCompare(String(aVal));
+      });
+    }
+    return data;
+  }, [lowStock, sortLow]);
+
+  const sortedOrders = React.useMemo(() => {
+    const data = [...orders];
+    const getVal = (o, key) => {
+      if (key === 'itemName') {
+        return o.items ? o.items.map((i) => i.itemName).join(', ') : o.itemName;
+      }
+      if (key === 'quantity') {
+        return o.items
+          ? o.items.reduce((sum, i) => sum + Number(i.quantity || 0), 0)
+          : Number(o.quantity);
+      }
+      if (key === 'supplier') {
+        return o.items ? o.items.map((i) => i.supplier).join(', ') : o.supplier;
+      }
+      return o[key];
+    };
+    if (sortOrders.key) {
+      data.sort((a, b) => {
+        const aVal = getVal(a, sortOrders.key);
+        const bVal = getVal(b, sortOrders.key);
+        if (aVal == null) return 1;
+        if (bVal == null) return -1;
+        if (typeof aVal === 'number' && typeof bVal === 'number') {
+          return sortOrders.direction === 'asc' ? aVal - bVal : bVal - aVal;
+        }
+        return sortOrders.direction === 'asc'
+          ? String(aVal).localeCompare(String(bVal))
+          : String(bVal).localeCompare(String(aVal));
+      });
+    }
+    return data;
+  }, [orders, sortOrders]);
+
+  const handleLowSort = (key) => {
+    setSortLow((prev) => {
+      if (prev.key === key) {
+        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+  const handleOrderSort = (key) => {
+    setSortOrders((prev) => {
+      if (prev.key === key) {
+        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
   const handleNotesChange = (e) => setNotes(e.target.value);
 
   const handleAutoItemChange = (index, field, value) => {
@@ -130,15 +208,50 @@ function Purchases({ refreshFlag }) {
           <table>
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Qty</th>
-                <th>Threshold</th>
-                <th>Last Purchase Price</th>
+                <th onClick={() => handleLowSort('id')}>
+                  ID
+                  {sortLow.key === 'id' && (
+                    <span className="sort-indicator">
+                      {sortLow.direction === 'asc' ? '▲' : '▼'}
+                    </span>
+                  )}
+                </th>
+                <th onClick={() => handleLowSort('name')}>
+                  Name
+                  {sortLow.key === 'name' && (
+                    <span className="sort-indicator">
+                      {sortLow.direction === 'asc' ? '▲' : '▼'}
+                    </span>
+                  )}
+                </th>
+                <th onClick={() => handleLowSort('quantity')}>
+                  Qty
+                  {sortLow.key === 'quantity' && (
+                    <span className="sort-indicator">
+                      {sortLow.direction === 'asc' ? '▲' : '▼'}
+                    </span>
+                  )}
+                </th>
+                <th onClick={() => handleLowSort('restock_threshold')}>
+                  Threshold
+                  {sortLow.key === 'restock_threshold' && (
+                    <span className="sort-indicator">
+                      {sortLow.direction === 'asc' ? '▲' : '▼'}
+                    </span>
+                  )}
+                </th>
+                <th onClick={() => handleLowSort('price')}>
+                  Last Purchase Price
+                  {sortLow.key === 'price' && (
+                    <span className="sort-indicator">
+                      {sortLow.direction === 'asc' ? '▲' : '▼'}
+                    </span>
+                  )}
+                </th>
               </tr>
             </thead>
             <tbody>
-              {lowStock.map((it) => (
+              {sortedLowStock.map((it) => (
                 <tr key={it.id}>
                   <td>{it.id}</td>
                   <td>{it.name}</td>
@@ -151,22 +264,58 @@ function Purchases({ refreshFlag }) {
           </table>
         )}
       </div>
+      <h3>Purchase Orders</h3>
       {loading ? (
         <p>Loading...</p>
       ) : (
         <table>
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Item Name</th>
-              <th>Quantity</th>
-              <th>Supplier</th>
-              <th>Date</th>
+              <th onClick={() => handleOrderSort('id')}>
+                ID
+                {sortOrders.key === 'id' && (
+                  <span className="sort-indicator">
+                    {sortOrders.direction === 'asc' ? '▲' : '▼'}
+                  </span>
+                )}
+              </th>
+              <th onClick={() => handleOrderSort('itemName')}>
+                Item Name
+                {sortOrders.key === 'itemName' && (
+                  <span className="sort-indicator">
+                    {sortOrders.direction === 'asc' ? '▲' : '▼'}
+                  </span>
+                )}
+              </th>
+              <th onClick={() => handleOrderSort('quantity')}>
+                Quantity
+                {sortOrders.key === 'quantity' && (
+                  <span className="sort-indicator">
+                    {sortOrders.direction === 'asc' ? '▲' : '▼'}
+                  </span>
+                )}
+              </th>
+              <th onClick={() => handleOrderSort('supplier')}>
+                Supplier
+                {sortOrders.key === 'supplier' && (
+                  <span className="sort-indicator">
+                    {sortOrders.direction === 'asc' ? '▲' : '▼'}
+                  </span>
+                )}
+              </th>
+              <th onClick={() => handleOrderSort('orderDate')}>
+                Date
+                {sortOrders.key === 'orderDate' && (
+                  <span className="sort-indicator">
+                    {sortOrders.direction === 'asc' ? '▲' : '▼'}
+                  </span>
+                )}
+              </th>
               <th>PDF</th>
             </tr>
           </thead>
           <tbody>
-            {orders.map((order) => (
+            {sortedOrders.map((order) => (
               <tr key={order.id}>
                 <td>{order.id}</td>
                 <td>

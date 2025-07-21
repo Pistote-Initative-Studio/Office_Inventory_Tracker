@@ -9,6 +9,8 @@ function Reports() {
   const [items, setItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState('');
   const [itemData, setItemData] = useState([]);
+  const [sortOrders, setSortOrders] = useState({ key: '', direction: 'asc' });
+  const [sortItems, setSortItems] = useState({ key: '', direction: 'asc' });
 
   const formatCurrency = (val) =>
     typeof val === 'number' ? `$${val.toFixed(2)}` : `$${Number(val || 0).toFixed(2)}`;
@@ -45,6 +47,74 @@ function Reports() {
     fetchItemData(selectedItem);
   }, [selectedItem]);
 
+  const sortedOrders = React.useMemo(() => {
+    const data = [...orders];
+    if (sortOrders.key) {
+      data.sort((a, b) => {
+        const aVal = a[sortOrders.key];
+        const bVal = b[sortOrders.key];
+        if (aVal == null) return 1;
+        if (bVal == null) return -1;
+        if (typeof aVal === 'number' && typeof bVal === 'number') {
+          return sortOrders.direction === 'asc' ? aVal - bVal : bVal - aVal;
+        }
+        return sortOrders.direction === 'asc'
+          ? String(aVal).localeCompare(String(bVal))
+          : String(bVal).localeCompare(String(aVal));
+      });
+    }
+    return data;
+  }, [orders, sortOrders]);
+
+  const sortedItemData = React.useMemo(() => {
+    const data = [...itemData];
+    if (sortItems.key) {
+      data.sort((a, b) => {
+        const getVal = (row) => {
+          if (sortItems.key === 'unit') {
+            const q = row.items
+              ? (row.items.find((i) => i.itemName === items.find((x) => x.id.toString() === selectedItem)?.name) || {}).quantity
+              : row.quantity;
+            const p = row.items
+              ? (row.items.find((i) => i.itemName === items.find((x) => x.id.toString() === selectedItem)?.name) || {}).price
+              : row.price;
+            return q ? p / q : 0;
+          }
+          return row[sortItems.key];
+        };
+        const aVal = getVal(a);
+        const bVal = getVal(b);
+        if (aVal == null) return 1;
+        if (bVal == null) return -1;
+        if (typeof aVal === 'number' && typeof bVal === 'number') {
+          return sortItems.direction === 'asc' ? aVal - bVal : bVal - aVal;
+        }
+        return sortItems.direction === 'asc'
+          ? String(aVal).localeCompare(String(bVal))
+          : String(bVal).localeCompare(String(aVal));
+      });
+    }
+    return data;
+  }, [itemData, sortItems]);
+
+  const handleOrderSort = (key) => {
+    setSortOrders((prev) => {
+      if (prev.key === key) {
+        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+  const handleItemSort = (key) => {
+    setSortItems((prev) => {
+      if (prev.key === key) {
+        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
   const exportOrders = (type) => {
     const url = `http://localhost:5000/api/reports/purchase-orders/${type}?startDate=${startDate}&endDate=${endDate}`;
     window.open(url, '_blank');
@@ -74,15 +144,50 @@ function Reports() {
       <table>
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Supplier</th>
-            <th>Items</th>
-            <th>Quantity</th>
-            <th>Total Cost</th>
+            <th onClick={() => handleOrderSort('orderDate')}>
+              Date
+              {sortOrders.key === 'orderDate' && (
+                <span className="sort-indicator">
+                  {sortOrders.direction === 'asc' ? '▲' : '▼'}
+                </span>
+              )}
+            </th>
+            <th onClick={() => handleOrderSort('supplier')}>
+              Supplier
+              {sortOrders.key === 'supplier' && (
+                <span className="sort-indicator">
+                  {sortOrders.direction === 'asc' ? '▲' : '▼'}
+                </span>
+              )}
+            </th>
+            <th onClick={() => handleOrderSort('items')}>
+              Items
+              {sortOrders.key === 'items' && (
+                <span className="sort-indicator">
+                  {sortOrders.direction === 'asc' ? '▲' : '▼'}
+                </span>
+              )}
+            </th>
+            <th onClick={() => handleOrderSort('quantity')}>
+              Quantity
+              {sortOrders.key === 'quantity' && (
+                <span className="sort-indicator">
+                  {sortOrders.direction === 'asc' ? '▲' : '▼'}
+                </span>
+              )}
+            </th>
+            <th onClick={() => handleOrderSort('price')}>
+              Total Cost
+              {sortOrders.key === 'price' && (
+                <span className="sort-indicator">
+                  {sortOrders.direction === 'asc' ? '▲' : '▼'}
+                </span>
+              )}
+            </th>
           </tr>
         </thead>
         <tbody>
-          {orders.map((o) => (
+          {sortedOrders.map((o) => (
             <tr key={o.id}>
               <td>{o.orderDate}</td>
               <td>{o.supplier}</td>
@@ -108,15 +213,50 @@ function Reports() {
         <table>
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Supplier</th>
-              <th>Unit Price</th>
-              <th>Total Price</th>
-              <th>Quantity</th>
+              <th onClick={() => handleItemSort('orderDate')}>
+                Date
+                {sortItems.key === 'orderDate' && (
+                  <span className="sort-indicator">
+                    {sortItems.direction === 'asc' ? '▲' : '▼'}
+                  </span>
+                )}
+              </th>
+              <th onClick={() => handleItemSort('supplier')}>
+                Supplier
+                {sortItems.key === 'supplier' && (
+                  <span className="sort-indicator">
+                    {sortItems.direction === 'asc' ? '▲' : '▼'}
+                  </span>
+                )}
+              </th>
+              <th onClick={() => handleItemSort('unit')}>
+                Unit Price
+                {sortItems.key === 'unit' && (
+                  <span className="sort-indicator">
+                    {sortItems.direction === 'asc' ? '▲' : '▼'}
+                  </span>
+                )}
+              </th>
+              <th onClick={() => handleItemSort('price')}>
+                Total Price
+                {sortItems.key === 'price' && (
+                  <span className="sort-indicator">
+                    {sortItems.direction === 'asc' ? '▲' : '▼'}
+                  </span>
+                )}
+              </th>
+              <th onClick={() => handleItemSort('quantity')}>
+                Quantity
+                {sortItems.key === 'quantity' && (
+                  <span className="sort-indicator">
+                    {sortItems.direction === 'asc' ? '▲' : '▼'}
+                  </span>
+                )}
+              </th>
             </tr>
           </thead>
           <tbody>
-            {itemData.map((r, idx) => {
+            {sortedItemData.map((r, idx) => {
               let price = r.price;
               let qty = r.quantity;
               let supplier = r.supplier;
