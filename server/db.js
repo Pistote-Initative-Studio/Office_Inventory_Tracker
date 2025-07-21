@@ -27,6 +27,7 @@ const createOrdersQuery = `CREATE TABLE IF NOT EXISTS purchaseOrders (
   itemName TEXT,
   quantity INTEGER,
   supplier TEXT,
+  price REAL,
   notes TEXT,
   orderDate TEXT,
   items TEXT
@@ -40,6 +41,10 @@ db.serialize(() => {
   db.run(createOrdersQuery);
   // Add the items column if it was created before this field existed
   db.run('ALTER TABLE purchaseOrders ADD COLUMN items TEXT', (err) => {
+    // ignore errors if column already exists
+  });
+  // Add the price column if it was created before this field existed
+  db.run('ALTER TABLE purchaseOrders ADD COLUMN price REAL', (err) => {
     // ignore errors if column already exists
   });
 

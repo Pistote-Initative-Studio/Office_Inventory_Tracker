@@ -46,6 +46,9 @@ const sampleItems = [
     monthly: scaleData(monthlyData, 1),
     quarterly: scaleData(quarterlyData, 1),
     yearly: scaleData(yearlyData, 1),
+    monthlyPrice: scaleData(monthlyData, 0.5),
+    quarterlyPrice: scaleData(quarterlyData, 0.5),
+    yearlyPrice: scaleData(yearlyData, 0.5),
   },
   {
     id: 2,
@@ -58,6 +61,9 @@ const sampleItems = [
     monthly: scaleData(monthlyData, 0.8),
     quarterly: scaleData(quarterlyData, 0.8),
     yearly: scaleData(yearlyData, 0.8),
+    monthlyPrice: scaleData(monthlyData, 0.4),
+    quarterlyPrice: scaleData(quarterlyData, 0.4),
+    yearlyPrice: scaleData(yearlyData, 0.4),
   },
   {
     id: 3,
@@ -70,6 +76,9 @@ const sampleItems = [
     monthly: scaleData(monthlyData, 1.2),
     quarterly: scaleData(quarterlyData, 1.2),
     yearly: scaleData(yearlyData, 1.2),
+    monthlyPrice: scaleData(monthlyData, 0.6),
+    quarterlyPrice: scaleData(quarterlyData, 0.6),
+    yearlyPrice: scaleData(yearlyData, 0.6),
   },
   {
     id: 4,
@@ -82,6 +91,9 @@ const sampleItems = [
     monthly: scaleData(monthlyData, 0.6),
     quarterly: scaleData(quarterlyData, 0.6),
     yearly: scaleData(yearlyData, 0.6),
+    monthlyPrice: scaleData(monthlyData, 0.3),
+    quarterlyPrice: scaleData(quarterlyData, 0.3),
+    yearlyPrice: scaleData(yearlyData, 0.3),
   },
   {
     id: 5,
@@ -94,10 +106,13 @@ const sampleItems = [
     monthly: scaleData(monthlyData, 1.5),
     quarterly: scaleData(quarterlyData, 1.5),
     yearly: scaleData(yearlyData, 1.5),
+    monthlyPrice: scaleData(monthlyData, 0.75),
+    quarterlyPrice: scaleData(quarterlyData, 0.75),
+    yearlyPrice: scaleData(yearlyData, 0.75),
   },
 ];
 
-function Trends() {
+function Trends({ mode = 'Quantity', onModeChange }) {
   const [selectedRange, setSelectedRange] = useState('Monthly');
   const [isCompareMode, setIsCompareMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState([sampleItems[0]]);
@@ -111,19 +126,20 @@ function Trends() {
   const colors = ['#3a82ff', '#58c13b', '#ff5722', '#6f42c1'];
 
   const rangeKey = selectedRange.toLowerCase();
+  const seriesKey = mode === 'Price' ? `${rangeKey}Price` : rangeKey;
 
   const maxValue = useMemo(() => {
     return Math.max(
-      ...displayedItems.flatMap((it) => it[rangeKey].map((d) => d.value))
+      ...displayedItems.flatMap((it) => it[seriesKey].map((d) => d.value))
     );
-  }, [displayedItems, rangeKey]);
+  }, [displayedItems, seriesKey]);
 
   const seriesData = useMemo(() => {
     const width = 600;
     const height = 160;
     return displayedItems.map((item, idx) => {
-      const pts = item[rangeKey].map((d, i) => {
-        const x = (width / (item[rangeKey].length - 1)) * i;
+      const pts = item[seriesKey].map((d, i) => {
+        const x = (width / (item[seriesKey].length - 1)) * i;
         const y = height - (d.value / maxValue) * (height - 20) + 10;
         return [x, y];
       });
@@ -132,7 +148,7 @@ function Trends() {
         .join(' ');
       return { id: item.id, color: colors[idx % colors.length], pts, path };
     });
-  }, [displayedItems, rangeKey, maxValue]);
+  }, [displayedItems, seriesKey, maxValue]);
 
   const totalKey =
     selectedRange === 'Monthly'
@@ -242,6 +258,17 @@ function Trends() {
         <div className="trends-right">
           <div className="chart-container">
             <div className="trends-placeholder">
+            <div className="range-toggle-container">
+              {['Quantity', 'Price'].map((m) => (
+                <button
+                  key={m}
+                  className={mode === m ? 'active' : ''}
+                  onClick={() => onModeChange && onModeChange(m)}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
             <div className="time-range-buttons range-toggle-container">
               {['Monthly', 'Quarterly', 'Yearly'].map((range) => (
                 <button

@@ -6,6 +6,7 @@ const PDFDocument = require('pdfkit');
 const db = require('./db');
 // Import inventory routes
 const inventoryRoutes = require('./routes/inventory');
+const reportsRoutes = require('./routes/reports');
 
 // Helper functions for sqlite3 Promises
 const runAsync = (sql, params = []) =>
@@ -44,18 +45,20 @@ app.use(express.json()); // Parse incoming JSON bodies
 
 // Mount the inventory API routes
 app.use('/inventory', inventoryRoutes);
+app.use('/api/reports', reportsRoutes);
 
 // POST /api/purchase-orders -> create a purchase order and generate PDF
 app.post('/api/purchase-orders', async (req, res) => {
-  const { items, itemName, quantity, supplier, notes, orderDate } = req.body;
+  const { items, itemName, quantity, supplier, price, notes, orderDate } = req.body;
   try {
     const orderItems = Array.isArray(items)
       ? items
-      : [{ itemName, quantity, supplier }];
+      : [{ itemName, quantity, supplier, price }];
+    const totalPrice = orderItems.reduce((sum, it) => sum + Number(it.price || 0), 0);
     const date = orderDate || new Date().toISOString();
     const result = await runAsync(
-      'INSERT INTO purchaseOrders (itemName, quantity, supplier, notes, orderDate, items) VALUES (?, ?, ?, ?, ?, ?)',
-      [itemName || null, quantity || null, supplier || null, notes, date, JSON.stringify(orderItems)]
+      'INSERT INTO purchaseOrders (itemName, quantity, supplier, price, notes, orderDate, items) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [itemName || null, quantity || null, supplier || null, totalPrice, notes, date, JSON.stringify(orderItems)]
     );
     const id = result.lastID;
 
@@ -73,8 +76,10 @@ app.post('/api/purchase-orders', async (req, res) => {
         doc.text(`${idx + 1}. Item: ${it.itemName}`);
         doc.text(`   Qty: ${it.quantity}`);
         doc.text(`   Supplier: ${it.supplier}`);
+        if (it.price !== undefined) doc.text(`   Price: $${it.price}`);
         doc.moveDown();
       });
+      doc.text(`Total Price: $${totalPrice}`);
       doc.text('Notes:');
       doc.text(notes || '');
       doc.end();

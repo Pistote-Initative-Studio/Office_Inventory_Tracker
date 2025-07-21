@@ -3,10 +3,12 @@ import './App.css';
 import InventoryTable from './InventoryTable';
 import Purchases from './Purchases';
 import Trends from './Trends';
+import Reports from './Reports';
 
 function App() {
   const [inventoryFlag, setInventoryFlag] = useState(0);
   const [activeTab, setActiveTab] = useState('Inventory');
+  const [trendsMode, setTrendsMode] = useState('Quantity');
 
   const triggerInventoryChange = () => {
     setInventoryFlag((prev) => prev + 1);
@@ -36,6 +38,12 @@ function App() {
         >
           Trends
         </button>
+        <button
+          className={activeTab === 'Reports' ? 'tab active' : 'tab'}
+          onClick={() => setActiveTab('Reports')}
+        >
+          Reports
+        </button>
       </div>
       <div className="tab-content">
         {activeTab === 'Inventory' && (
@@ -53,7 +61,12 @@ function App() {
         )}
         {activeTab === 'Trends' && (
           <div className="content-box">
-            <Trends />
+            <Trends mode={trendsMode} onModeChange={setTrendsMode} />
+          </div>
+        )}
+        {activeTab === 'Reports' && (
+          <div className="content-box">
+            <Reports />
           </div>
         )}
       </div>
