@@ -84,6 +84,20 @@
   padding: 4px;
 }
 
+.section-box {
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 6px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  padding: 10px;
+  margin-bottom: 1rem;
+}
+
+.draft-msg {
+  color: green;
+  font-size: 0.9rem;
+  margin-top: 5px;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
