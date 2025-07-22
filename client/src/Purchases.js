@@ -6,10 +6,14 @@ function Purchases({ refreshFlag }) {
   const [loading, setLoading] = useState(false);
   const [lowStock, setLowStock] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [draftMessage, setDraftMessage] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
   const [autoItems, setAutoItems] = useState([]);
   const [customItems, setCustomItems] = useState([]);
   const [notes, setNotes] = useState('');
+  const [drafts, setDrafts] = useState([]);
+  const [frequentItems, setFrequentItems] = useState([]);
   const [lastPrices, setLastPrices] = useState({});
   const [sortLow, setSortLow] = useState({ key: '', direction: 'asc' });
   const [sortOrders, setSortOrders] = useState({ key: '', direction: 'asc' });
@@ -57,9 +61,33 @@ function Purchases({ refreshFlag }) {
     }
   };
 
+  const fetchDrafts = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/purchase-orders?status=draft');
+      if (!res.ok) throw new Error('Failed to fetch drafts');
+      const data = await res.json();
+      setDrafts(data.data || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchFrequentItems = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/purchase-orders/frequent');
+      if (!res.ok) throw new Error('Failed to fetch frequent items');
+      const data = await res.json();
+      setFrequentItems(data.data || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     fetchOrders();
     fetchLowStock();
+    fetchDrafts();
+    fetchFrequentItems();
   }, [refreshFlag]);
 
   useEffect(() => {
@@ -75,6 +103,14 @@ function Purchases({ refreshFlag }) {
     }));
     setAutoItems(mapped);
   }, [selectedIds, lowStock]);
+
+  useEffect(() => {
+    if (!showModal || editId == null) return;
+    const interval = setInterval(() => {
+      saveDraft(true);
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [showModal, editId, autoItems, customItems, notes]);
 
   const sortedLowStock = React.useMemo(() => {
     const data = [...lowStock];
@@ -207,28 +243,63 @@ function Purchases({ refreshFlag }) {
     setCustomItems((prev) => [...prev, { itemName: '', quantity: '', supplier: '' }]);
   };
 
-  const createOrder = async () => {
-    const items = [...autoItems, ...customItems].filter(
-      (it) => it.itemName && it.quantity
-    );
+  const combinedItems = () =>
+    [...autoItems, ...customItems].filter((it) => it.itemName && it.quantity);
+
+  const saveDraft = async (auto = false) => {
+    const items = combinedItems();
     try {
-      const res = await fetch('http://localhost:5000/api/purchase-orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items, notes }),
-      });
-      if (!res.ok) throw new Error('Failed to create order');
-      await res.json();
-      fetchOrders();
+      if (editId) {
+        await fetch(`http://localhost:5000/api/purchase-orders/${editId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items, notes, status: 'draft' }),
+        });
+      } else {
+        const res = await fetch('http://localhost:5000/api/purchase-orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items, notes, status: 'draft' }),
+        });
+        const data = await res.json();
+        setEditId(data.id);
+      }
+      if (!auto) fetchDrafts();
+      setDraftMessage('Draft Saved');
+      setTimeout(() => setDraftMessage(''), 3000);
     } catch (err) {
       console.error(err);
-      alert('Error creating order');
+    }
+  };
+
+  const submitOrder = async () => {
+    const items = combinedItems();
+    try {
+      if (editId) {
+        await fetch(`http://localhost:5000/api/purchase-orders/${editId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items, notes, status: 'final' }),
+        });
+      } else {
+        await fetch('http://localhost:5000/api/purchase-orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items, notes, status: 'final' }),
+        });
+      }
+      fetchOrders();
+      fetchDrafts();
+    } catch (err) {
+      console.error(err);
+      alert('Error submitting order');
     } finally {
       setShowModal(false);
       setSelectedIds([]);
       setAutoItems([]);
       setCustomItems([]);
       setNotes('');
+      setEditId(null);
     }
   };
 
@@ -244,7 +315,55 @@ function Purchases({ refreshFlag }) {
         />
         <button onClick={() => setShowModal(true)}>Create Purchase Order</button>
       </div>
-      <div className="restock-section">
+      <div className="section-box">
+        <h3>Frequently Bought Items</h3>
+        {frequentItems.length === 0 ? (
+          <p>No data</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Item Name</th>
+                <th>Last Purchase Qty</th>
+                <th>Last Purchase Date</th>
+                <th>Price Paid</th>
+                <th>Add</th>
+              </tr>
+            </thead>
+            <tbody>
+              {frequentItems.map((it, idx) => (
+                <tr key={idx}>
+                  <td>{it.itemName}</td>
+                  <td>{it.lastQuantity}</td>
+                  <td>{it.lastDate}</td>
+                  <td>{`$${it.pricePerItem.toFixed(2)}`}</td>
+                  <td>
+                    <button
+                      onClick={() => {
+                        setCustomItems([
+                          {
+                            itemName: it.itemName,
+                            quantity: it.lastQuantity,
+                            supplier: '',
+                            price: (it.pricePerItem * it.lastQuantity).toFixed(2),
+                          },
+                        ]);
+                        setAutoItems([]);
+                        setSelectedIds([]);
+                        setEditId(null);
+                        setShowModal(true);
+                      }}
+                    >
+                      Add to Purchase Order
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+      <div className="section-box restock-section">
         <h3>Items Needing Reorder</h3>
         {lowStock.length === 0 ? (
           <p>No items require restocking.</p>
@@ -302,6 +421,56 @@ function Purchases({ refreshFlag }) {
                   <td>{it.quantity}</td>
                   <td>{it.restock_threshold}</td>
                   <td>{lastPrices[it.name] || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+      <div className="section-box">
+        <h3>Draft Purchase Orders</h3>
+        {drafts.length === 0 ? (
+          <p>No drafts available.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Draft ID</th>
+                <th>Items</th>
+                <th>Last Modified</th>
+                <th>Total Price</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {drafts.map((d) => (
+                <tr key={d.id}>
+                  <td>{d.id}</td>
+                  <td>{d.items ? d.items.map((i) => i.itemName).join(', ') : ''}</td>
+                  <td>{d.last_modified}</td>
+                  <td>{`$${computeTotalPrice(d).toFixed(2)}`}</td>
+                  <td>
+                    <button
+                      onClick={() => {
+                        setCustomItems(d.items || []);
+                        setAutoItems([]);
+                        setNotes(d.notes || '');
+                        setSelectedIds([]);
+                        setEditId(d.id);
+                        setShowModal(true);
+                      }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={async () => {
+                        await fetch(`http://localhost:5000/api/purchase-orders/${d.id}`, { method: 'DELETE' });
+                        fetchDrafts();
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -408,7 +577,7 @@ function Purchases({ refreshFlag }) {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                createOrder();
+                submitOrder();
               }}
             >
               <div>
@@ -517,10 +686,12 @@ function Purchases({ refreshFlag }) {
                 <label>Notes:</label>
                 <textarea value={notes} onChange={handleNotesChange} />
               </div>
-              <button type="submit">Submit</button>
+              <button type="button" onClick={() => saveDraft(false)}>Save Draft</button>
+              <button type="submit">Submit Order</button>
               <button type="button" onClick={() => setShowModal(false)}>
                 Cancel
               </button>
+              {draftMessage && <div className="draft-msg">{draftMessage}</div>}
             </form>
           </div>
         </div>

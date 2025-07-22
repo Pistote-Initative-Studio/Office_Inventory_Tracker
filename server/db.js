@@ -31,7 +31,9 @@ const createOrdersQuery = `CREATE TABLE IF NOT EXISTS purchaseOrders (
   price REAL,
   notes TEXT,
   orderDate TEXT,
-  items TEXT
+  items TEXT,
+  status TEXT DEFAULT 'final',
+  last_modified TEXT
 )`;
 
 // Ensure the table exists and populate it with sample data on first run
@@ -46,6 +48,14 @@ db.serialize(() => {
   });
   // Add the price column if it was created before this field existed
   db.run('ALTER TABLE purchaseOrders ADD COLUMN price REAL', (err) => {
+    // ignore errors if column already exists
+  });
+  // Add status column if it doesn't exist
+  db.run("ALTER TABLE purchaseOrders ADD COLUMN status TEXT DEFAULT 'final'", (err) => {
+    // ignore errors if column already exists
+  });
+  // Add last_modified column if it doesn't exist
+  db.run('ALTER TABLE purchaseOrders ADD COLUMN last_modified TEXT', (err) => {
     // ignore errors if column already exists
   });
   // Add last_price column for inventory if it doesn't exist
