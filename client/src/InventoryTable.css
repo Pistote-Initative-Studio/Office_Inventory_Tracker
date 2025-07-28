@@ -109,6 +109,6 @@
 
 /* Highlight rows that are at or below the restock threshold */
 .low-stock {
-  background-color: #ffcccc;
+  background-color: rgba(255, 0, 0, 0.15);
 }
 
