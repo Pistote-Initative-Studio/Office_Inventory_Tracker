@@ -107,8 +107,17 @@
   border: 1px solid red;
 }
 
-/* Highlight rows that are at or below the restock threshold */
-.low-stock {
-  background-color: #ffcccc;
+/*
+ * Highlight rows that are at or below the restock threshold.
+ * Use a Vista‑like gradient and a subtle left border to fit the existing theme.
+ */
+.inventory-table tbody tr.low-stock {
+  background: linear-gradient(to bottom, #ffe6e6, #ffc6c6);
+  box-shadow: inset 4px 0 0 #c54e4e;
 }
+/* ensure text within low‑stock rows remains legible */
+.inventory-table tbody tr.low-stock td {
+  color: #7a0a0a;
+}
+
 
