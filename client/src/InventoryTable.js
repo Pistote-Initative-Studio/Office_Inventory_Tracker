@@ -31,7 +31,15 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
       const res = await fetch('http://localhost:5000/inventory');
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
-      setItems(data.data || []);
+      const list = (data.data || []).map((it) => ({
+        ...it,
+        // normalize camelCase for easier access in the UI
+        restockThreshold:
+          it.restockThreshold !== undefined
+            ? it.restockThreshold
+            : it.restock_threshold,
+      }));
+      setItems(list);
     } catch (err) {
       console.error(err);
       alert('Error fetching inventory');
@@ -288,8 +296,8 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
               <tr
                 key={item.id}
                 className={
-                  item.restock_threshold != null &&
-                  Number(item.quantity) <= Number(item.restock_threshold)
+                  item.restockThreshold != null &&
+                  Number(item.quantity) <= Number(item.restockThreshold)
                     ? 'low-stock'
                     : ''
                 }
