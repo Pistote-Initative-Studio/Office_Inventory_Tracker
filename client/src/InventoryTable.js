@@ -286,7 +286,8 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
                   </span>
                 )}
               </th>
-              <th>Actions</th>
+              {/* Rename the Actions column to make it clear that only deletion is possible now that inline editing is supported. */}
+              <th>Delete</th>
             </tr>
           </thead>
           <tbody>
