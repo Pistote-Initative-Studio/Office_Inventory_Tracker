@@ -302,13 +302,13 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
               >
                 <td>{item.id}</td>
                 <td
-                  className={
+                  className={`editable-cell ${
                     cellHighlight &&
                     cellHighlight.id === item.id &&
                     cellHighlight.field === 'name'
                       ? 'cell-highlight'
                       : ''
-                  }
+                  }`}
                   onClick={() =>
                     !editingCell && startEdit(item.id, 'name', item.name)
                   }
@@ -317,6 +317,7 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
                   editingCell.id === item.id &&
                   editingCell.field === 'name' ? (
                     <input
+                      type="text"
                       className="inline-input"
                       autoFocus
                       value={editingCell.value}
@@ -325,17 +326,20 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
                       onKeyDown={handleKeyDown}
                     />
                   ) : (
-                    item.name
+                    <>
+                      {item.name}
+                      <span className="pencil-icon" />
+                    </>
                   )}
                 </td>
                 <td
-                  className={
+                  className={`editable-cell ${
                     cellHighlight &&
                     cellHighlight.id === item.id &&
                     cellHighlight.field === 'category'
                       ? 'cell-highlight'
                       : ''
-                  }
+                  }`}
                   onClick={() =>
                     !editingCell && startEdit(item.id, 'category', item.category)
                   }
@@ -343,34 +347,30 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
                   {editingCell &&
                   editingCell.id === item.id &&
                   editingCell.field === 'category' ? (
-                    <select
+                    <input
+                      type="text"
                       className="inline-input"
                       autoFocus
                       value={editingCell.value}
                       onChange={handleCellChange}
                       onBlur={saveCell}
                       onKeyDown={handleKeyDown}
-                    >
-                      {Array.from(new Set(items.map((it) => it.category))).map(
-                        (cat) => (
-                          <option key={cat} value={cat}>
-                            {cat}
-                          </option>
-                        )
-                      )}
-                    </select>
+                    />
                   ) : (
-                    item.category
+                    <>
+                      {item.category}
+                      <span className="pencil-icon" />
+                    </>
                   )}
                 </td>
                 <td
-                  className={
+                  className={`editable-cell ${
                     cellHighlight &&
                     cellHighlight.id === item.id &&
                     cellHighlight.field === 'quantity'
                       ? 'cell-highlight'
                       : ''
-                  }
+                  }`}
                   onClick={() =>
                     !editingCell && startEdit(item.id, 'quantity', item.quantity)
                   }
@@ -379,7 +379,7 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
                   editingCell.id === item.id &&
                   editingCell.field === 'quantity' ? (
                     <input
-                      type="number"
+                      type="text"
                       className="inline-input"
                       autoFocus
                       value={editingCell.value}
@@ -388,17 +388,20 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
                       onKeyDown={handleKeyDown}
                     />
                   ) : (
-                    item.quantity
+                    <>
+                      {item.quantity}
+                      <span className="pencil-icon" />
+                    </>
                   )}
                 </td>
                 <td
-                  className={
+                  className={`editable-cell ${
                     cellHighlight &&
                     cellHighlight.id === item.id &&
                     cellHighlight.field === 'unit'
                       ? 'cell-highlight'
                       : ''
-                  }
+                  }`}
                   onClick={() =>
                     !editingCell && startEdit(item.id, 'unit', item.unit)
                   }
@@ -407,6 +410,7 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
                   editingCell.id === item.id &&
                   editingCell.field === 'unit' ? (
                     <input
+                      type="text"
                       className="inline-input"
                       autoFocus
                       value={editingCell.value}
@@ -415,17 +419,20 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
                       onKeyDown={handleKeyDown}
                     />
                   ) : (
-                    item.unit
+                    <>
+                      {item.unit}
+                      <span className="pencil-icon" />
+                    </>
                   )}
                 </td>
                 <td
-                  className={
+                  className={`editable-cell ${
                     cellHighlight &&
                     cellHighlight.id === item.id &&
                     cellHighlight.field === 'restock_threshold'
                       ? 'cell-highlight'
                       : ''
-                  }
+                  }`}
                   onClick={() =>
                     !editingCell &&
                     startEdit(
@@ -439,7 +446,7 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
                   editingCell.id === item.id &&
                   editingCell.field === 'restock_threshold' ? (
                     <input
-                      type="number"
+                      type="text"
                       className="inline-input"
                       autoFocus
                       value={editingCell.value}
@@ -448,17 +455,20 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
                       onKeyDown={handleKeyDown}
                     />
                   ) : (
-                    item.restock_threshold
+                    <>
+                      {item.restock_threshold}
+                      <span className="pencil-icon" />
+                    </>
                   )}
                 </td>
                 <td
-                  className={
+                  className={`editable-cell ${
                     cellHighlight &&
                     cellHighlight.id === item.id &&
                     cellHighlight.field === 'supplier'
                       ? 'cell-highlight'
                       : ''
-                  }
+                  }`}
                   onClick={() =>
                     !editingCell && startEdit(item.id, 'supplier', item.supplier)
                   }
@@ -467,6 +477,7 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
                   editingCell.id === item.id &&
                   editingCell.field === 'supplier' ? (
                     <input
+                      type="text"
                       className="inline-input"
                       autoFocus
                       value={editingCell.value}
@@ -475,7 +486,10 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
                       onKeyDown={handleKeyDown}
                     />
                   ) : (
-                    item.supplier
+                    <>
+                      {item.supplier}
+                      <span className="pencil-icon" />
+                    </>
                   )}
                 </td>
                 <td>

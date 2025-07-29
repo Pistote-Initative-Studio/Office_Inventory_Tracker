@@ -138,4 +138,25 @@
   transition: background 1s ease;
 }
 
+/* cells that can be edited */
+.editable-cell {
+  position: relative;
+  cursor: pointer;
+}
+.editable-cell:hover {
+  background-color: #eef5ff;
+}
+.editable-cell .pencil-icon {
+  display: none;
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8em;
+  color: #555;
+}
+.editable-cell:hover .pencil-icon {
+  display: inline;
+}
+
 
