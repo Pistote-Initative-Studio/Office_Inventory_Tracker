@@ -5,10 +5,10 @@ import AddItemForm from './AddItemForm';
 function InventoryTable({ refreshFlag, onInventoryChange }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [editingItem, setEditingItem] = useState(null);
-  const [editErrors, setEditErrors] = useState({});
+  const [editingCell, setEditingCell] = useState(null);
   const [editApiError, setEditApiError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [cellHighlight, setCellHighlight] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [filteredData, setFilteredData] = useState([]);
@@ -108,68 +108,66 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
     }
   };
 
-  const openEditModal = (item) => {
-    setEditingItem({ ...item });
-    setEditErrors({});
+  const startEdit = (id, field, value) => {
+    setEditingCell({ id, field, value });
     setEditApiError('');
     setSuccessMsg('');
   };
 
-  const handleEditChange = (e) => {
-    const { name, value } = e.target;
-    setEditingItem((prev) => ({ ...prev, [name]: value }));
-    setEditErrors((prev) => ({ ...prev, [name]: '' }));
-    setEditApiError('');
+  const handleCellChange = (e) => {
+    setEditingCell((prev) => ({ ...prev, value: e.target.value }));
   };
 
-  const handleEditSave = async (e) => {
-    e.preventDefault();
-    const errs = {};
-    if (!editingItem.name || editingItem.name.trim() === '') {
-      errs.name = 'Name is required';
-    }
-    const qty = Number(editingItem.quantity);
-    if (editingItem.quantity === '' || isNaN(qty) || qty < 0) {
-      errs.quantity = 'Quantity must be a non-negative number';
-    }
-    if (editingItem.restock_threshold !== '' && editingItem.restock_threshold !== null) {
-      const r = Number(editingItem.restock_threshold);
-      if (isNaN(r) || r < 0) {
-        errs.restock_threshold = 'Restock threshold must be non-negative';
-      }
-    }
-    if (Object.keys(errs).length > 0) {
-      setEditErrors(errs);
-      return;
-    }
+  const saveCell = async () => {
+    if (!editingCell) return;
+    const item = items.find((it) => it.id === editingCell.id);
+    if (!item) return;
+    const updated = { ...item, [editingCell.field]: editingCell.value };
     try {
-      const res = await fetch(`http://localhost:5000/inventory/${editingItem.id}`, {
+      const res = await fetch(`http://localhost:5000/inventory/${item.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: editingItem.name,
-          category: editingItem.category,
-          quantity: Number(editingItem.quantity),
-          unit: editingItem.unit,
-          restock_threshold: Number(editingItem.restock_threshold),
-          supplier: editingItem.supplier,
+          name: updated.name,
+          category: updated.category,
+          quantity: Number(updated.quantity),
+          unit: updated.unit,
+          restock_threshold: Number(updated.restock_threshold),
+          supplier: updated.supplier,
         }),
       });
-      if (res.status === 400) {
-        const data = await res.json();
-        setEditApiError(data.error || 'Invalid input data');
+      if (!res.ok) {
+        const data = res.status === 400 ? await res.json() : null;
+        setEditApiError(data?.error || 'Failed to update');
         return;
       }
-      if (!res.ok) throw new Error('Failed to update');
-      setEditingItem(null);
-      setEditErrors({});
+      setItems((prev) =>
+        prev.map((it) => (it.id === updated.id ? updated : it))
+      );
+      setEditingCell(null);
       setEditApiError('');
       setSuccessMsg('Item updated successfully!');
-      fetchItems();
+      setCellHighlight({ id: updated.id, field: editingCell.field });
+      setTimeout(() => setCellHighlight(null), 1000);
       if (onInventoryChange) onInventoryChange();
     } catch (err) {
       console.error(err);
-      alert('Error updating item');
+      setEditApiError('Error updating item');
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingCell(null);
+    setEditApiError('');
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveCell();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelEdit();
     }
   };
 
@@ -303,82 +301,190 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
                 }
               >
                 <td>{item.id}</td>
-                <td>{item.name}</td>
-                <td>{item.category}</td>
-                <td>{item.quantity}</td>
-                <td>{item.unit}</td>
-                <td>{item.restock_threshold}</td>
-                <td>{item.supplier}</td>
+                <td
+                  className={
+                    cellHighlight &&
+                    cellHighlight.id === item.id &&
+                    cellHighlight.field === 'name'
+                      ? 'cell-highlight'
+                      : ''
+                  }
+                  onClick={() =>
+                    !editingCell && startEdit(item.id, 'name', item.name)
+                  }
+                >
+                  {editingCell &&
+                  editingCell.id === item.id &&
+                  editingCell.field === 'name' ? (
+                    <input
+                      className="inline-input"
+                      autoFocus
+                      value={editingCell.value}
+                      onChange={handleCellChange}
+                      onBlur={saveCell}
+                      onKeyDown={handleKeyDown}
+                    />
+                  ) : (
+                    item.name
+                  )}
+                </td>
+                <td
+                  className={
+                    cellHighlight &&
+                    cellHighlight.id === item.id &&
+                    cellHighlight.field === 'category'
+                      ? 'cell-highlight'
+                      : ''
+                  }
+                  onClick={() =>
+                    !editingCell && startEdit(item.id, 'category', item.category)
+                  }
+                >
+                  {editingCell &&
+                  editingCell.id === item.id &&
+                  editingCell.field === 'category' ? (
+                    <select
+                      className="inline-input"
+                      autoFocus
+                      value={editingCell.value}
+                      onChange={handleCellChange}
+                      onBlur={saveCell}
+                      onKeyDown={handleKeyDown}
+                    >
+                      {Array.from(new Set(items.map((it) => it.category))).map(
+                        (cat) => (
+                          <option key={cat} value={cat}>
+                            {cat}
+                          </option>
+                        )
+                      )}
+                    </select>
+                  ) : (
+                    item.category
+                  )}
+                </td>
+                <td
+                  className={
+                    cellHighlight &&
+                    cellHighlight.id === item.id &&
+                    cellHighlight.field === 'quantity'
+                      ? 'cell-highlight'
+                      : ''
+                  }
+                  onClick={() =>
+                    !editingCell && startEdit(item.id, 'quantity', item.quantity)
+                  }
+                >
+                  {editingCell &&
+                  editingCell.id === item.id &&
+                  editingCell.field === 'quantity' ? (
+                    <input
+                      type="number"
+                      className="inline-input"
+                      autoFocus
+                      value={editingCell.value}
+                      onChange={handleCellChange}
+                      onBlur={saveCell}
+                      onKeyDown={handleKeyDown}
+                    />
+                  ) : (
+                    item.quantity
+                  )}
+                </td>
+                <td
+                  className={
+                    cellHighlight &&
+                    cellHighlight.id === item.id &&
+                    cellHighlight.field === 'unit'
+                      ? 'cell-highlight'
+                      : ''
+                  }
+                  onClick={() =>
+                    !editingCell && startEdit(item.id, 'unit', item.unit)
+                  }
+                >
+                  {editingCell &&
+                  editingCell.id === item.id &&
+                  editingCell.field === 'unit' ? (
+                    <input
+                      className="inline-input"
+                      autoFocus
+                      value={editingCell.value}
+                      onChange={handleCellChange}
+                      onBlur={saveCell}
+                      onKeyDown={handleKeyDown}
+                    />
+                  ) : (
+                    item.unit
+                  )}
+                </td>
+                <td
+                  className={
+                    cellHighlight &&
+                    cellHighlight.id === item.id &&
+                    cellHighlight.field === 'restock_threshold'
+                      ? 'cell-highlight'
+                      : ''
+                  }
+                  onClick={() =>
+                    !editingCell &&
+                    startEdit(
+                      item.id,
+                      'restock_threshold',
+                      item.restock_threshold
+                    )
+                  }
+                >
+                  {editingCell &&
+                  editingCell.id === item.id &&
+                  editingCell.field === 'restock_threshold' ? (
+                    <input
+                      type="number"
+                      className="inline-input"
+                      autoFocus
+                      value={editingCell.value}
+                      onChange={handleCellChange}
+                      onBlur={saveCell}
+                      onKeyDown={handleKeyDown}
+                    />
+                  ) : (
+                    item.restock_threshold
+                  )}
+                </td>
+                <td
+                  className={
+                    cellHighlight &&
+                    cellHighlight.id === item.id &&
+                    cellHighlight.field === 'supplier'
+                      ? 'cell-highlight'
+                      : ''
+                  }
+                  onClick={() =>
+                    !editingCell && startEdit(item.id, 'supplier', item.supplier)
+                  }
+                >
+                  {editingCell &&
+                  editingCell.id === item.id &&
+                  editingCell.field === 'supplier' ? (
+                    <input
+                      className="inline-input"
+                      autoFocus
+                      value={editingCell.value}
+                      onChange={handleCellChange}
+                      onBlur={saveCell}
+                      onKeyDown={handleKeyDown}
+                    />
+                  ) : (
+                    item.supplier
+                  )}
+                </td>
                 <td>
-                  <button onClick={() => openEditModal(item)}>Edit</button>{' '}
                   <button onClick={() => handleDelete(item.id)}>Delete</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-      )}
-      {editingItem && (
-        <div className="modal">
-          <div className="modal-content">
-            <h3>Edit Item</h3>
-            {editApiError && (
-              <div className="status-message error-message">{editApiError}</div>
-            )}
-            <form onSubmit={handleEditSave}>
-              <div>
-                <label>Name:</label>
-                <input
-                  name="name"
-                  value={editingItem.name}
-                  onChange={handleEditChange}
-                  className={editErrors.name ? 'error-input' : ''}
-                  required
-                />
-                {editErrors.name && <div className="error-message">{editErrors.name}</div>}
-              </div>
-              <div>
-                <label>Category:</label>
-                <input name="category" value={editingItem.category} onChange={handleEditChange} />
-              </div>
-              <div>
-                <label>Quantity:</label>
-                <input
-                  name="quantity"
-                  type="number"
-                  value={editingItem.quantity}
-                  onChange={handleEditChange}
-                  className={editErrors.quantity ? 'error-input' : ''}
-                  required
-                />
-                {editErrors.quantity && <div className="error-message">{editErrors.quantity}</div>}
-              </div>
-              <div>
-                <label>Unit:</label>
-                <input name="unit" value={editingItem.unit} onChange={handleEditChange} />
-              </div>
-              <div>
-                <label>Restock Threshold:</label>
-                <input
-                  name="restock_threshold"
-                  type="number"
-                  value={editingItem.restock_threshold}
-                  onChange={handleEditChange}
-                  className={editErrors.restock_threshold ? 'error-input' : ''}
-                />
-                {editErrors.restock_threshold && (
-                  <div className="error-message">{editErrors.restock_threshold}</div>
-                )}
-              </div>
-              <div>
-                <label>Supplier:</label>
-                <input name="supplier" value={editingItem.supplier} onChange={handleEditChange} />
-              </div>
-              <button type="submit">Save</button>
-              <button type="button" onClick={() => setEditingItem(null)}>Cancel</button>
-            </form>
-          </div>
-        </div>
       )}
       {showAddModal && (
         <div className="modal" onClick={() => setShowAddModal(false)}>
