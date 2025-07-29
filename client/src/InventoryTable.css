@@ -120,4 +120,22 @@
   color: #7a0a0a;
 }
 
+/* inline editing styles */
+.inline-input {
+  padding: 3px;
+  border: 1px solid #888;
+  border-radius: 4px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  outline: none;
+}
+.inline-input:focus {
+  border-color: #4d90fe;
+  box-shadow: 0 0 3px #4d90fe;
+}
+
+.cell-highlight {
+  background-color: #d0f0d0;
+  transition: background 1s ease;
+}
+
 
