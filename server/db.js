@@ -19,7 +19,10 @@ const createInventoryQuery = `CREATE TABLE IF NOT EXISTS inventory (
   unit TEXT,
   restock_threshold INTEGER,
   supplier TEXT,
-  last_price REAL
+  last_price REAL,
+  -- new optional columns for location and product number
+  location TEXT,
+  product_number TEXT
 )`;
 
 // Create purchaseOrders table if it doesn't exist
@@ -60,6 +63,16 @@ db.serialize(() => {
   });
   // Add last_price column for inventory if it doesn't exist
   db.run('ALTER TABLE inventory ADD COLUMN last_price REAL', (err) => {
+    // ignore errors if column already exists
+  });
+
+  // Add location column for inventory if it doesn't exist
+  db.run('ALTER TABLE inventory ADD COLUMN location TEXT', (err) => {
+    // ignore errors if column already exists
+  });
+
+  // Add product_number column for inventory if it doesn't exist
+  db.run('ALTER TABLE inventory ADD COLUMN product_number TEXT', (err) => {
     // ignore errors if column already exists
   });
 
