@@ -557,13 +557,15 @@ function Purchases({ refreshFlag }) {
                 <td>{order.orderDate}</td>
                 <td>{`$${computeTotalPrice(order).toFixed(2)}`}</td>
                 <td>
-                  <a
-                    href={`http://localhost:5000/api/purchase-orders/${order.id}/pdf`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  {/* Open the PDF in a new tab when clicking instead of relying on anchor download */}
+                  <button
+                    onClick={() => {
+                      const url = `http://localhost:5000/api/purchase-orders/${order.id}/pdf`;
+                      window.open(url, '_blank');
+                    }}
                   >
                     Download
-                  </a>
+                  </button>
                 </td>
               </tr>
             ))}
