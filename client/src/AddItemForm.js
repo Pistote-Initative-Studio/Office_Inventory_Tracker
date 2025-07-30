@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './AddItemForm.css';
+import { apiFetch } from './api';
 
 function AddItemForm({ onSuccess }) {
   const [formData, setFormData] = useState({
@@ -61,7 +62,7 @@ function AddItemForm({ onSuccess }) {
       return;
     }
     try {
-      const res = await fetch('http://localhost:5000/inventory', {
+      const res = await apiFetch('http://localhost:5000/inventory', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import './App.css';
 import './Reports.css';
+import { apiFetch } from './api';
 
 function Reports() {
   const [orders, setOrders] = useState([]);
@@ -17,20 +18,20 @@ function Reports() {
 
   const fetchOrders = async () => {
     let url = `http://localhost:5000/api/reports/purchase-orders?startDate=${startDate}&endDate=${endDate}`;
-    const res = await fetch(url);
+    const res = await apiFetch(url);
     const data = await res.json();
     setOrders(data.data || []);
   };
 
   const fetchItems = async () => {
-    const res = await fetch('http://localhost:5000/inventory');
+    const res = await apiFetch('http://localhost:5000/inventory');
     const data = await res.json();
     setItems(data.data || []);
   };
 
   const fetchItemData = async (id) => {
     if (!id) return;
-    const res = await fetch(`http://localhost:5000/api/reports/item/${id}`);
+    const res = await apiFetch(`http://localhost:5000/api/reports/item/${id}`);
     const data = await res.json();
     setItemData(data.data || []);
   };

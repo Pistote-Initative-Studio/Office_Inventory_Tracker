@@ -4,20 +4,37 @@ import InventoryTable from './InventoryTable';
 import Purchases from './Purchases';
 import Trends from './Trends';
 import Reports from './Reports';
+import Auth from './Auth';
+import AdminPanel from './AdminPanel';
 
 function App() {
   const [inventoryFlag, setInventoryFlag] = useState(0);
   const [activeTab, setActiveTab] = useState('Inventory');
   const [trendsMode, setTrendsMode] = useState('Quantity');
+  const [role, setRole] = useState(localStorage.getItem('role') || '');
 
   const triggerInventoryChange = () => {
     setInventoryFlag((prev) => prev + 1);
   };
 
+  if (!localStorage.getItem('token')) {
+    return <Auth onAuth={(r) => setRole(r)} />;
+  }
+
   return (
     <div className="App">
       <header className="app-header">
         <h1 className="app-title">Office Supply Manager</h1>
+        <button
+          className="logout-btn"
+          onClick={() => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('role');
+            window.location.reload();
+          }}
+        >
+          Logout
+        </button>
       </header>
       <div className="tabs">
         <button
@@ -44,6 +61,14 @@ function App() {
         >
           Reports
         </button>
+        {role === 'admin' && (
+          <button
+            className={activeTab === 'Admin' ? 'tab active' : 'tab'}
+            onClick={() => setActiveTab('Admin')}
+          >
+            Admin
+          </button>
+        )}
       </div>
       <div className="tab-content">
         {activeTab === 'Inventory' && (
@@ -67,6 +92,11 @@ function App() {
         {activeTab === 'Reports' && (
           <div className="content-box">
             <Reports />
+          </div>
+        )}
+        {activeTab === 'Admin' && role === 'admin' && (
+          <div className="content-box">
+            <AdminPanel />
           </div>
         )}
       </div>

@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import './Purchases.css';
+import { apiFetch } from './api';
 
 function Purchases({ refreshFlag }) {
+  const role = localStorage.getItem('role') || 'employee';
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [lowStock, setLowStock] = useState([]);
@@ -19,10 +21,14 @@ function Purchases({ refreshFlag }) {
   const [sortOrders, setSortOrders] = useState({ key: '', direction: 'asc' });
   const [searchTerm, setSearchTerm] = useState('');
 
+  if (role !== 'admin') {
+    return <div className="permission-error">Only admins can access this section.</div>;
+  }
+
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/purchase-orders');
+      const res = await apiFetch('http://localhost:5000/api/purchase-orders');
       if (!res.ok) throw new Error('Failed to fetch orders');
       const data = await res.json();
       const list = data.data || [];
@@ -47,7 +53,7 @@ function Purchases({ refreshFlag }) {
 
   const fetchLowStock = async () => {
     try {
-      const res = await fetch('http://localhost:5000/inventory');
+      const res = await apiFetch('http://localhost:5000/inventory');
       if (!res.ok) throw new Error('Failed to fetch inventory');
       const data = await res.json();
       const items = (data.data || []).filter(
@@ -63,7 +69,7 @@ function Purchases({ refreshFlag }) {
 
   const fetchDrafts = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/purchase-orders?status=draft');
+      const res = await apiFetch('http://localhost:5000/api/purchase-orders?status=draft');
       if (!res.ok) throw new Error('Failed to fetch drafts');
       const data = await res.json();
       setDrafts(data.data || []);
@@ -74,7 +80,7 @@ function Purchases({ refreshFlag }) {
 
   const fetchFrequentItems = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/purchase-orders/frequent');
+      const res = await apiFetch('http://localhost:5000/api/purchase-orders/frequent');
       if (!res.ok) throw new Error('Failed to fetch frequent items');
       const data = await res.json();
       setFrequentItems(data.data || []);
@@ -258,13 +264,13 @@ function Purchases({ refreshFlag }) {
     const items = combinedItems();
     try {
       if (editId) {
-        await fetch(`http://localhost:5000/api/purchase-orders/${editId}`, {
+        await apiFetch(`http://localhost:5000/api/purchase-orders/${editId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ items, notes, status: 'draft' }),
         });
       } else {
-        const res = await fetch('http://localhost:5000/api/purchase-orders', {
+        const res = await apiFetch('http://localhost:5000/api/purchase-orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ items, notes, status: 'draft' }),
@@ -284,13 +290,13 @@ function Purchases({ refreshFlag }) {
     const items = combinedItems();
     try {
       if (editId) {
-        await fetch(`http://localhost:5000/api/purchase-orders/${editId}`, {
+        await apiFetch(`http://localhost:5000/api/purchase-orders/${editId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ items, notes, status: 'final' }),
         });
       } else {
-        await fetch('http://localhost:5000/api/purchase-orders', {
+        await apiFetch('http://localhost:5000/api/purchase-orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ items, notes, status: 'final' }),
@@ -472,7 +478,7 @@ function Purchases({ refreshFlag }) {
                     </button>
                     <button
                       onClick={async () => {
-                        await fetch(`http://localhost:5000/api/purchase-orders/${d.id}`, { method: 'DELETE' });
+                        await apiFetch(`http://localhost:5000/api/purchase-orders/${d.id}`, { method: 'DELETE' });
                         fetchDrafts();
                       }}
                     >
