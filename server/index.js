@@ -77,7 +77,11 @@ app.post('/api/purchase-orders', async (req, res) => {
         orderItems.forEach((it, idx) => {
           doc.text(`${idx + 1}. Item: ${it.itemName}`);
           doc.text(`   Qty: ${it.quantity}`);
+          // Include additional fields if present
+          if (it.unit !== undefined) doc.text(`   Unit: ${it.unit}`);
           doc.text(`   Supplier: ${it.supplier}`);
+          if (it.product_number !== undefined)
+            doc.text(`   Product Number: ${it.product_number}`);
           if (it.price !== undefined) doc.text(`   Price: $${it.price}`);
           doc.moveDown();
         });
@@ -154,7 +158,11 @@ app.get('/api/purchase-orders/:id/pdf', async (req, res) => {
     orderItems.forEach((it, idx) => {
       doc.text(`${idx + 1}. Item: ${it.itemName}`);
       doc.text(`   Qty: ${it.quantity}`);
+      // Include additional fields if present
+      if (it.unit !== undefined) doc.text(`   Unit: ${it.unit}`);
       doc.text(`   Supplier: ${it.supplier}`);
+      if (it.product_number !== undefined)
+        doc.text(`   Product Number: ${it.product_number}`);
       if (it.price !== undefined) doc.text(`   Price: $${it.price}`);
       doc.moveDown();
     });
@@ -196,7 +204,11 @@ app.put('/api/purchase-orders/:id', async (req, res) => {
         orderItems.forEach((it, idx) => {
           doc.text(`${idx + 1}. Item: ${it.itemName}`);
           doc.text(`   Qty: ${it.quantity}`);
+          // Include additional fields if present
+          if (it.unit !== undefined) doc.text(`   Unit: ${it.unit}`);
           doc.text(`   Supplier: ${it.supplier}`);
+          if (it.product_number !== undefined)
+            doc.text(`   Product Number: ${it.product_number}`);
           if (it.price !== undefined) doc.text(`   Price: $${it.price}`);
           doc.moveDown();
         });
