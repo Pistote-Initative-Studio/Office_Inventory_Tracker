@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import './InventoryTable.css';
 import AddItemForm from './AddItemForm';
+import { apiFetch } from './api';
 
 function InventoryTable({ refreshFlag, onInventoryChange }) {
   const [items, setItems] = useState([]);
@@ -28,7 +29,7 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
   const fetchItems = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/inventory');
+      const res = await apiFetch('http://localhost:5000/inventory');
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       const list = (data.data || []).map((it) => ({
@@ -98,7 +99,7 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
 
   const handleDelete = async (id) => {
     try {
-      const res = await fetch(`http://localhost:5000/inventory/${id}`, { method: 'DELETE' });
+      const res = await apiFetch(`http://localhost:5000/inventory/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete');
       setItems((prev) => prev.filter((item) => item.id !== id));
       if (onInventoryChange) onInventoryChange();
@@ -124,7 +125,7 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
     if (!item) return;
     const updated = { ...item, [editingCell.field]: editingCell.value };
     try {
-      const res = await fetch(`http://localhost:5000/inventory/${item.id}`, {
+      const res = await apiFetch(`http://localhost:5000/inventory/${item.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

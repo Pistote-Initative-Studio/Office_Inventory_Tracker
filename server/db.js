@@ -1,5 +1,6 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const bcrypt = require('bcryptjs');
 
 // Connect to SQLite database file (will create the file if it doesn't exist)
 const db = new sqlite3.Database(path.join(__dirname, 'inventory.db'), (err) => {
@@ -39,12 +40,21 @@ const createOrdersQuery = `CREATE TABLE IF NOT EXISTS purchaseOrders (
   last_modified TEXT
 )`;
 
+// Create users table if it doesn't exist
+const createUsersQuery = `CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT UNIQUE,
+  password TEXT,
+  role TEXT DEFAULT 'employee'
+)`;
+
 // Ensure the table exists and populate it with sample data on first run
 // `serialize` ensures that the queries run sequentially
 
 db.serialize(() => {
   db.run(createInventoryQuery);
   db.run(createOrdersQuery);
+  db.run(createUsersQuery);
   // Add the items column if it was created before this field existed
   db.run('ALTER TABLE purchaseOrders ADD COLUMN items TEXT', (err) => {
     // ignore errors if column already exists
@@ -73,6 +83,11 @@ db.serialize(() => {
 
   // Add product_number column for inventory if it doesn't exist
   db.run('ALTER TABLE inventory ADD COLUMN product_number TEXT', (err) => {
+    // ignore errors if column already exists
+  });
+
+  // Add role column for users if it doesn't exist
+  db.run("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'employee'", (err) => {
     // ignore errors if column already exists
   });
 
@@ -165,6 +180,20 @@ db.serialize(() => {
         );
       });
       orderStmt.finalize();
+    }
+  });
+
+  db.get('SELECT COUNT(*) AS count FROM users', (err, row) => {
+    if (err) {
+      console.error('Error counting user rows:', err.message);
+      return;
+    }
+    if (row.count === 0) {
+      const hash = bcrypt.hashSync('admin', 10);
+      db.run(
+        'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
+        ['admin', hash, 'admin']
+      );
     }
   });
 });
