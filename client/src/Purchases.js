@@ -4,6 +4,7 @@ import { apiFetch } from './api';
 
 function Purchases({ refreshFlag }) {
   const role = localStorage.getItem('role') || 'employee';
+  const isAdmin = role === 'admin';
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [lowStock, setLowStock] = useState([]);
@@ -21,9 +22,6 @@ function Purchases({ refreshFlag }) {
   const [sortOrders, setSortOrders] = useState({ key: '', direction: 'asc' });
   const [searchTerm, setSearchTerm] = useState('');
 
-  if (role !== 'admin') {
-    return <div className="permission-error">Only admins can access this section.</div>;
-  }
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -90,17 +88,20 @@ function Purchases({ refreshFlag }) {
   };
 
   useEffect(() => {
+    if (!isAdmin) return;
     fetchOrders();
     fetchLowStock();
     fetchDrafts();
     fetchFrequentItems();
-  }, [refreshFlag]);
+  }, [refreshFlag, isAdmin]);
 
   useEffect(() => {
+    if (!isAdmin) return;
     if (showModal) fetchLowStock();
-  }, [showModal]);
+  }, [showModal, isAdmin]);
 
   useEffect(() => {
+    if (!isAdmin) return;
     const selected = lowStock.filter((it) => selectedIds.includes(it.id.toString()));
     // Map selected low stock items into autoItems. Include unit and product_number so that
     // purchase orders carry these extra fields even though the inventory tab hides unit.
@@ -112,17 +113,18 @@ function Purchases({ refreshFlag }) {
       product_number: it.product_number || '',
     }));
     setAutoItems(mapped);
-  }, [selectedIds, lowStock]);
+  }, [selectedIds, lowStock, isAdmin]);
 
   useEffect(() => {
-    if (!showModal || editId == null) return;
+    if (!isAdmin || !showModal || editId == null) return;
     const interval = setInterval(() => {
       saveDraft(true);
     }, 60000);
     return () => clearInterval(interval);
-  }, [showModal, editId, autoItems, customItems, notes]);
+  }, [showModal, editId, autoItems, customItems, notes, isAdmin]);
 
   const sortedLowStock = React.useMemo(() => {
+    if (!isAdmin) return [];
     const data = [...lowStock];
     if (sortLow.key) {
       data.sort((a, b) => {
@@ -145,7 +147,7 @@ function Purchases({ refreshFlag }) {
       });
     }
     return data;
-  }, [lowStock, sortLow]);
+  }, [lowStock, sortLow, isAdmin]);
 
   const computeTotalPrice = (order) => {
     if (order.items) {
@@ -161,6 +163,7 @@ function Purchases({ refreshFlag }) {
   };
 
   const filteredOrders = React.useMemo(() => {
+    if (!isAdmin) return [];
     if (!searchTerm.trim()) return orders;
     const term = searchTerm.toLowerCase();
     return orders.filter((o) => {
@@ -179,9 +182,10 @@ function Purchases({ refreshFlag }) {
         (`$${total}`).includes(term)
       );
     });
-  }, [orders, searchTerm]);
+  }, [orders, searchTerm, isAdmin]);
 
   const sortedOrders = React.useMemo(() => {
+    if (!isAdmin) return [];
     const data = [...filteredOrders];
     const getVal = (o, key) => {
       if (key === 'itemName') {
@@ -215,7 +219,7 @@ function Purchases({ refreshFlag }) {
       });
     }
     return data;
-  }, [filteredOrders, sortOrders]);
+  }, [filteredOrders, sortOrders, isAdmin]);
 
   const handleLowSort = (key) => {
     setSortLow((prev) => {
@@ -316,6 +320,12 @@ function Purchases({ refreshFlag }) {
       setEditId(null);
     }
   };
+
+  if (!isAdmin) {
+    return (
+      <div className="permission-error">Only admins can access this section.</div>
+    );
+  }
 
   return (
     <div className="purchases-container">
