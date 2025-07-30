@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './App.css';
+import './Auth.css';
 import { apiFetch } from './api';
 
 function Auth({ onAuth }) {
@@ -27,17 +28,32 @@ function Auth({ onAuth }) {
   };
 
   return (
-    <div className="auth-container">
-      <h2>{isLogin ? 'Login' : 'Register'}</h2>
-      <form onSubmit={handleSubmit}>
-        <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" />
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" />
-        <button type="submit">{isLogin ? 'Login' : 'Register'}</button>
-      </form>
-      {error && <div className="error-msg">{error}</div>}
-      <button onClick={() => setIsLogin(!isLogin)} className="link-btn">
-        {isLogin ? 'Need an account? Register' : 'Have an account? Login'}
-      </button>
+    <div className="auth-wrapper">
+      <div className="auth-container">
+        <h2>{isLogin ? 'Login' : 'Register'}</h2>
+        <form onSubmit={handleSubmit}>
+          <input
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Username"
+          />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+          />
+          <button type="submit">{isLogin ? 'Login' : 'Register'}</button>
+        </form>
+        {error && <div className="error-msg">{error}</div>}
+        <button
+          type="button"
+          onClick={() => setIsLogin(!isLogin)}
+          className="link-btn"
+        >
+          {isLogin ? 'Need an account? Register' : 'Have an account? Login'}
+        </button>
+      </div>
     </div>
   );
 }
