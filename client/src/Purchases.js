@@ -96,10 +96,14 @@ function Purchases({ refreshFlag }) {
 
   useEffect(() => {
     const selected = lowStock.filter((it) => selectedIds.includes(it.id.toString()));
+    // Map selected low stock items into autoItems. Include unit and product_number so that
+    // purchase orders carry these extra fields even though the inventory tab hides unit.
     const mapped = selected.map((it) => ({
       itemName: it.name,
       quantity: Math.max(Number(it.restock_threshold) - Number(it.quantity), 1),
+      unit: it.unit || '',
       supplier: it.supplier || '',
+      product_number: it.product_number || '',
     }));
     setAutoItems(mapped);
   }, [selectedIds, lowStock]);
@@ -240,7 +244,11 @@ function Purchases({ refreshFlag }) {
   };
 
   const addCustomItem = () => {
-    setCustomItems((prev) => [...prev, { itemName: '', quantity: '', supplier: '' }]);
+    // When adding a new custom item, include unit and product_number fields so they can be edited
+    setCustomItems((prev) => [
+      ...prev,
+      { itemName: '', quantity: '', supplier: '', unit: '', product_number: '', price: '' },
+    ]);
   };
 
   const combinedItems = () =>
@@ -508,14 +516,7 @@ function Purchases({ refreshFlag }) {
                   </span>
                 )}
               </th>
-              <th onClick={() => handleOrderSort('supplier')}>
-                Supplier
-                {sortOrders.key === 'supplier' && (
-                  <span className="sort-indicator">
-                    {sortOrders.direction === 'asc' ? '▲' : '▼'}
-                  </span>
-                )}
-              </th>
+              {/* Removed the sortable Supplier column; a static Supplier column is added below */}
               <th onClick={() => handleOrderSort('orderDate')}>
                 Date
                 {sortOrders.key === 'orderDate' && (
@@ -524,6 +525,10 @@ function Purchases({ refreshFlag }) {
                   </span>
                 )}
               </th>
+              {/* Additional columns: Unit and Product Number, plus keep Supplier */}
+              <th>Unit</th>
+              <th>Supplier</th>
+              <th>Product Number</th>
               <th onClick={() => handleOrderSort('totalPrice')}>
                 Total Price
                 {sortOrders.key === 'totalPrice' && (
@@ -551,8 +556,18 @@ function Purchases({ refreshFlag }) {
                 </td>
                 <td>
                   {order.items
-                    ? order.items.map((i) => i.supplier).join(', ')
+                    ? order.items.map((i) => i.unit || '').join(', ')
+                    : ''}
+                </td>
+                <td>
+                  {order.items
+                    ? order.items.map((i) => i.supplier || '').join(', ')
                     : order.supplier}
+                </td>
+                <td>
+                  {order.items
+                    ? order.items.map((i) => i.product_number || '').join(', ')
+                    : ''}
                 </td>
                 <td>{order.orderDate}</td>
                 <td>{`$${computeTotalPrice(order).toFixed(2)}`}</td>
@@ -604,7 +619,9 @@ function Purchases({ refreshFlag }) {
                     <tr>
                       <th>Item</th>
                       <th>Quantity</th>
+                      <th>Unit</th>
                       <th>Supplier</th>
+                      <th>Product Number</th>
                       <th>Price</th>
                     </tr>
                   </thead>
@@ -621,6 +638,7 @@ function Purchases({ refreshFlag }) {
                             }
                           />
                         </td>
+                        <td>{it.unit}</td>
                         <td>
                           <input
                             value={it.supplier}
@@ -629,6 +647,7 @@ function Purchases({ refreshFlag }) {
                             }
                           />
                         </td>
+                        <td>{it.product_number}</td>
                         <td>
                           <input
                             type="number"
@@ -661,9 +680,25 @@ function Purchases({ refreshFlag }) {
                         </td>
                         <td>
                           <input
+                            value={it.unit}
+                            onChange={(e) =>
+                              handleCustomItemChange(idx, 'unit', e.target.value)
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
                             value={it.supplier}
                             onChange={(e) =>
                               handleCustomItemChange(idx, 'supplier', e.target.value)
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
+                            value={it.product_number}
+                            onChange={(e) =>
+                              handleCustomItemChange(idx, 'product_number', e.target.value)
                             }
                           />
                         </td>

@@ -264,14 +264,7 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
                   </span>
                 )}
               </th>
-              <th onClick={() => handleSort('unit')}>
-                Unit
-                {sortConfig.key === 'unit' && (
-                  <span className="sort-indicator">
-                    {sortConfig.direction === 'asc' ? '▲' : '▼'}
-                  </span>
-                )}
-              </th>
+              {/* Removed Unit column on the inventory tab as units are now displayed on the purchase tab */}
               <th onClick={() => handleSort('restock_threshold')}>
                 Restock Threshold
                 {sortConfig.key === 'restock_threshold' && (
@@ -415,37 +408,7 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
                     </>
                   )}
                 </td>
-                <td
-                  className={`editable-cell ${
-                    cellHighlight &&
-                    cellHighlight.id === item.id &&
-                    cellHighlight.field === 'unit'
-                      ? 'cell-highlight'
-                      : ''
-                  }`}
-                  onClick={() =>
-                    !editingCell && startEdit(item.id, 'unit', item.unit)
-                  }
-                >
-                  {editingCell &&
-                  editingCell.id === item.id &&
-                  editingCell.field === 'unit' ? (
-                    <input
-                      type="text"
-                      className="inline-input"
-                      autoFocus
-                      value={editingCell.value}
-                      onChange={handleCellChange}
-                      onBlur={saveCell}
-                      onKeyDown={handleKeyDown}
-                    />
-                  ) : (
-                    <>
-                      {item.unit}
-                      <span className="pencil-icon" />
-                    </>
-                  )}
-                </td>
+                {/* Removed Unit cell on the inventory tab */}
                 <td
                   className={`editable-cell ${
                     cellHighlight &&
