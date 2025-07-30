@@ -134,6 +134,8 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
           unit: updated.unit,
           restock_threshold: Number(updated.restock_threshold),
           supplier: updated.supplier,
+          location: updated.location,
+          product_number: updated.product_number,
         }),
       });
       if (!res.ok) {
@@ -278,9 +280,27 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
                   </span>
                 )}
               </th>
+              {/* New location column */}
+              <th onClick={() => handleSort('location')}>
+                Location
+                {sortConfig.key === 'location' && (
+                  <span className="sort-indicator">
+                    {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                  </span>
+                )}
+              </th>
               <th onClick={() => handleSort('supplier')}>
                 Supplier
                 {sortConfig.key === 'supplier' && (
+                  <span className="sort-indicator">
+                    {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                  </span>
+                )}
+              </th>
+              {/* New product number column */}
+              <th onClick={() => handleSort('product_number')}>
+                Product Number
+                {sortConfig.key === 'product_number' && (
                   <span className="sort-indicator">
                     {sortConfig.direction === 'asc' ? '▲' : '▼'}
                   </span>
@@ -462,6 +482,38 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
                     </>
                   )}
                 </td>
+                {/* New location editable cell */}
+                <td
+                  className={`editable-cell ${
+                    cellHighlight &&
+                    cellHighlight.id === item.id &&
+                    cellHighlight.field === 'location'
+                      ? 'cell-highlight'
+                      : ''
+                  }`}
+                  onClick={() =>
+                    !editingCell && startEdit(item.id, 'location', item.location)
+                  }
+                >
+                  {editingCell &&
+                  editingCell.id === item.id &&
+                  editingCell.field === 'location' ? (
+                    <input
+                      type="text"
+                      className="inline-input"
+                      autoFocus
+                      value={editingCell.value}
+                      onChange={handleCellChange}
+                      onBlur={saveCell}
+                      onKeyDown={handleKeyDown}
+                    />
+                  ) : (
+                    <>
+                      {item.location}
+                      <span className="pencil-icon" />
+                    </>
+                  )}
+                </td>
                 <td
                   className={`editable-cell ${
                     cellHighlight &&
@@ -489,6 +541,39 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
                   ) : (
                     <>
                       {item.supplier}
+                      <span className="pencil-icon" />
+                    </>
+                  )}
+                </td>
+                {/* New product number editable cell */}
+                <td
+                  className={`editable-cell ${
+                    cellHighlight &&
+                    cellHighlight.id === item.id &&
+                    cellHighlight.field === 'product_number'
+                      ? 'cell-highlight'
+                      : ''
+                  }`}
+                  onClick={() =>
+                    !editingCell &&
+                    startEdit(item.id, 'product_number', item.product_number)
+                  }
+                >
+                  {editingCell &&
+                  editingCell.id === item.id &&
+                  editingCell.field === 'product_number' ? (
+                    <input
+                      type="text"
+                      className="inline-input"
+                      autoFocus
+                      value={editingCell.value}
+                      onChange={handleCellChange}
+                      onBlur={saveCell}
+                      onKeyDown={handleKeyDown}
+                    />
+                  ) : (
+                    <>
+                      {item.product_number}
                       <span className="pencil-icon" />
                     </>
                   )}

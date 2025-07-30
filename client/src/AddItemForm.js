@@ -9,6 +9,9 @@ function AddItemForm({ onSuccess }) {
     unit: '',
     restock_threshold: '',
     supplier: '',
+    // new fields for location and product number
+    location: '',
+    product_number: '',
   });
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState('');
@@ -70,6 +73,8 @@ function AddItemForm({ onSuccess }) {
           unit: formData.unit,
           restock_threshold: Number(formData.restock_threshold),
           supplier: formData.supplier,
+          location: formData.location,
+          product_number: formData.product_number,
         }),
       });
       if (res.status === 400) {
@@ -87,6 +92,8 @@ function AddItemForm({ onSuccess }) {
         unit: '',
         restock_threshold: '',
         supplier: '',
+        location: '',
+        product_number: '',
       });
       setErrors({});
       setApiError('');
@@ -148,9 +155,27 @@ function AddItemForm({ onSuccess }) {
           <div className="error-message">{errors.restock_threshold}</div>
         )}
       </div>
+      {/* New location field */}
+      <div>
+        <label>Location:</label>
+        <input
+          name="location"
+          value={formData.location}
+          onChange={handleChange}
+        />
+      </div>
       <div>
         <label>Supplier:</label>
         <input name="supplier" value={formData.supplier} onChange={handleChange} />
+      </div>
+      {/* New product number field */}
+      <div>
+        <label>Product Number:</label>
+        <input
+          name="product_number"
+          value={formData.product_number}
+          onChange={handleChange}
+        />
       </div>
       <button type="submit">Add Item</button>
       {successMsg && (
