@@ -51,7 +51,17 @@ router.get('/', async (req, res) => {
 
 // POST /inventory -> insert a new item
 router.post('/', async (req, res) => {
-  const { name, category, quantity, unit, restock_threshold, supplier } = req.body;
+  // include location and product_number in request body
+  const {
+    name,
+    category,
+    quantity,
+    unit,
+    restock_threshold,
+    supplier,
+    location,
+    product_number,
+  } = req.body;
 
   if (!isValidItem(name, quantity, restock_threshold)) {
     return res.status(400).json({ success: false, error: 'Invalid input data' });
@@ -59,9 +69,19 @@ router.post('/', async (req, res) => {
 
   try {
     const query =
-      `INSERT INTO inventory (name, category, quantity, unit, restock_threshold, supplier)` +
-      ` VALUES (?, ?, ?, ?, ?, ?)`;
-    const result = await runAsync(query, [name, category, quantity, unit, restock_threshold, supplier]);
+      `INSERT INTO inventory (name, category, quantity, unit, restock_threshold, supplier, location, product_number)` +
+      ` VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+    const params = [
+      name,
+      category,
+      quantity,
+      unit,
+      restock_threshold,
+      supplier,
+      location,
+      product_number,
+    ];
+    const result = await runAsync(query, params);
     res.status(201).json({ success: true, data: { id: result.lastID } });
   } catch (err) {
     console.error('Failed to insert item:', err.message);
@@ -72,7 +92,17 @@ router.post('/', async (req, res) => {
 // PUT /inventory/:id -> update an item
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { name, category, quantity, unit, restock_threshold, supplier } = req.body;
+  // include location and product_number in request body for updates
+  const {
+    name,
+    category,
+    quantity,
+    unit,
+    restock_threshold,
+    supplier,
+    location,
+    product_number,
+  } = req.body;
 
   if (!isValidItem(name, quantity, restock_threshold)) {
     return res.status(400).json({ success: false, error: 'Invalid input data' });
@@ -83,8 +113,19 @@ router.put('/:id', async (req, res) => {
     if (!existing) {
       return res.status(404).json({ success: false, error: 'Item not found' });
     }
-    const query = `UPDATE inventory SET name=?, category=?, quantity=?, unit=?, restock_threshold=?, supplier=? WHERE id=?`;
-    const result = await runAsync(query, [name, category, quantity, unit, restock_threshold, supplier, id]);
+    const query =
+      `UPDATE inventory SET name=?, category=?, quantity=?, unit=?, restock_threshold=?, supplier=?, location=?, product_number=? WHERE id=?`;
+    const result = await runAsync(query, [
+      name,
+      category,
+      quantity,
+      unit,
+      restock_threshold,
+      supplier,
+      location,
+      product_number,
+      id,
+    ]);
     if (result.changes === 0) {
       return res.status(404).json({ success: false, error: 'Item not found' });
     }
