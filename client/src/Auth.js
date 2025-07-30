@@ -21,7 +21,8 @@ function Auth({ onAuth }) {
     if (res.ok && data.token) {
       localStorage.setItem('token', data.token);
       localStorage.setItem('role', data.role);
-      onAuth(data.role);
+      localStorage.setItem('username', username);
+      onAuth(data.role, username);
     } else {
       setError(data.error || 'Failed');
     }

@@ -6,35 +6,38 @@ import Trends from './Trends';
 import Reports from './Reports';
 import Auth from './Auth';
 import AdminPanel from './AdminPanel';
+import UserAvatar from './UserAvatar';
 
 function App() {
   const [inventoryFlag, setInventoryFlag] = useState(0);
   const [activeTab, setActiveTab] = useState('Inventory');
   const [trendsMode, setTrendsMode] = useState('Quantity');
   const [role, setRole] = useState(localStorage.getItem('role') || '');
+  const [username, setUsername] = useState(localStorage.getItem('username') || '');
 
   const triggerInventoryChange = () => {
     setInventoryFlag((prev) => prev + 1);
   };
 
   if (!localStorage.getItem('token')) {
-    return <Auth onAuth={(r) => setRole(r)} />;
+    return <Auth onAuth={(r, u) => { setRole(r); setUsername(u); }} />;
   }
 
   return (
     <div className="App">
       <header className="app-header">
         <h1 className="app-title">Office Supply Manager</h1>
-        <button
-          className="logout-btn"
-          onClick={() => {
+        <UserAvatar
+          username={username}
+          role={role}
+          onLogout={() => {
             localStorage.removeItem('token');
             localStorage.removeItem('role');
+            localStorage.removeItem('username');
             window.location.reload();
           }}
-        >
-          Logout
-        </button>
+          onUserManagement={() => setActiveTab('Admin')}
+        />
       </header>
       <div className="tabs">
         <button
