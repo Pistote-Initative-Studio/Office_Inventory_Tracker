@@ -120,12 +120,51 @@ app.get('/api/purchase-orders', async (req, res) => {
 });
 
 // GET /api/purchase-orders/:id/pdf -> download PDF
-app.get('/api/purchase-orders/:id/pdf', (req, res) => {
-  const filePath = path.join(ordersDir, `purchase_order_${req.params.id}.pdf`);
+// GET /api/purchase-orders/:id/pdf -> download or generate PDF on the fly
+app.get('/api/purchase-orders/:id/pdf', async (req, res) => {
+  const id = req.params.id;
+  const filePath = path.join(ordersDir, `purchase_order_${id}.pdf`);
+  // If a pre-generated PDF exists, download it
   if (fs.existsSync(filePath)) {
-    res.download(filePath);
-  } else {
-    res.status(404).send('PDF not found');
+    return res.download(filePath);
+  }
+  try {
+    // Otherwise, fetch the order and generate a PDF on the fly
+    const row = await getAsync('SELECT * FROM purchaseOrders WHERE id=?', [id]);
+    if (!row) return res.status(404).send('Order not found');
+    // Parse items array or fallback to single item fields
+    const orderItems = row.items
+      ? JSON.parse(row.items)
+      : [{ itemName: row.itemName, quantity: row.quantity, supplier: row.supplier, price: row.price }];
+    const totalPrice = Number(row.price) || orderItems.reduce((sum, it) => sum + Number(it.price || 0), 0);
+    const chunks = [];
+    const doc = new PDFDocument();
+    doc.on('data', (c) => chunks.push(c));
+    doc.on('end', () => {
+      res.setHeader('Content-Disposition', `attachment; filename="purchase_order_${id}.pdf"`);
+      res.type('application/pdf');
+      res.send(Buffer.concat(chunks));
+    });
+    // Build the PDF similar to the on-create logic
+    doc.fontSize(20).text('Purchase Order', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(12).text(`Order ID: ${id}`);
+    doc.text(`Date: ${row.orderDate || ''}`);
+    doc.moveDown();
+    orderItems.forEach((it, idx) => {
+      doc.text(`${idx + 1}. Item: ${it.itemName}`);
+      doc.text(`   Qty: ${it.quantity}`);
+      doc.text(`   Supplier: ${it.supplier}`);
+      if (it.price !== undefined) doc.text(`   Price: $${it.price}`);
+      doc.moveDown();
+    });
+    doc.text(`Total Price: $${totalPrice}`);
+    doc.text('Notes:');
+    doc.text(row.notes || '');
+    doc.end();
+  } catch (err) {
+    console.error('download pdf', err.message);
+    res.status(500).send('Server error');
   }
 });
 
