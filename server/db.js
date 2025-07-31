@@ -40,6 +40,12 @@ const createOrdersQuery = `CREATE TABLE IF NOT EXISTS purchaseOrders (
   last_modified TEXT
 )`;
 
+// Table to keep track of registered businesses
+const createBusinessesQuery = `CREATE TABLE IF NOT EXISTS businesses (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT UNIQUE
+)`;
+
 // Create users table if it doesn't exist
 const createUsersQuery = `CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -54,6 +60,7 @@ const createUsersQuery = `CREATE TABLE IF NOT EXISTS users (
 db.serialize(() => {
   db.run(createInventoryQuery);
   db.run(createOrdersQuery);
+  db.run(createBusinessesQuery);
   db.run(createUsersQuery);
   // Add the items column if it was created before this field existed
   db.run('ALTER TABLE purchaseOrders ADD COLUMN items TEXT', (err) => {
@@ -88,6 +95,11 @@ db.serialize(() => {
 
   // Add role column for users if it doesn't exist
   db.run("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'employee'", (err) => {
+    // ignore errors if column already exists
+  });
+
+  // Add business_id column for users if it doesn't exist
+  db.run('ALTER TABLE users ADD COLUMN business_id INTEGER', (err) => {
     // ignore errors if column already exists
   });
 
@@ -190,10 +202,13 @@ db.serialize(() => {
     }
     if (row.count === 0) {
       const hash = bcrypt.hashSync('admin', 10);
-      db.run(
-        'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
-        ['admin', hash, 'admin']
-      );
+      db.run('INSERT INTO businesses (name) VALUES (?)', ['Demo Business'], function () {
+        const bizId = this.lastID;
+        db.run(
+          'INSERT INTO users (username, password, role, business_id) VALUES (?, ?, ?, ?)',
+          ['admin', hash, 'admin', bizId]
+        );
+      });
     }
   });
 });
