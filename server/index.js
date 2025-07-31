@@ -65,7 +65,7 @@ app.use(cors()); // Enable Cross-Origin Resource Sharing
 app.use(express.json()); // Parse incoming JSON bodies
 
 app.post('/api/register', async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, accountType, businessName } = req.body;
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password required' });
   }
@@ -73,12 +73,26 @@ app.post('/api/register', async (req, res) => {
     const existing = await getAsync('SELECT id FROM users WHERE username=?', [username]);
     if (existing) return res.status(400).json({ error: 'User exists' });
     const hash = bcrypt.hashSync(password, 10);
+    let role = 'admin';
+    let bizId = null;
+    if (accountType === 'business') {
+      if (!businessName) return res.status(400).json({ error: 'Business name required' });
+      const biz = await getAsync('SELECT id FROM businesses WHERE name=?', [businessName]);
+      if (!biz) {
+        const r = await runAsync('INSERT INTO businesses (name) VALUES (?)', [businessName]);
+        bizId = r.lastID;
+        role = 'admin';
+      } else {
+        bizId = biz.id;
+        role = 'employee';
+      }
+    }
     const result = await runAsync(
-      'INSERT INTO users (username, password) VALUES (?, ?)',
-      [username, hash]
+      'INSERT INTO users (username, password, role, business_id) VALUES (?, ?, ?, ?)',
+      [username, hash, role, bizId]
     );
-    const token = jwt.sign({ id: result.lastID, role: 'employee' }, JWT_SECRET);
-    res.json({ token, role: 'employee' });
+    const token = jwt.sign({ id: result.lastID, role, businessId: bizId }, JWT_SECRET);
+    res.json({ token, role, businessId: bizId });
   } catch (err) {
     console.error('register', err.message);
     res.status(500).json({ error: 'Server error' });
@@ -92,8 +106,8 @@ app.post('/api/login', async (req, res) => {
     if (!user) return res.status(400).json({ error: 'Invalid credentials' });
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(400).json({ error: 'Invalid credentials' });
-    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET);
-    res.json({ token, role: user.role });
+    const token = jwt.sign({ id: user.id, role: user.role, businessId: user.business_id }, JWT_SECRET);
+    res.json({ token, role: user.role, businessId: user.business_id });
   } catch (err) {
     console.error('login', err.message);
     res.status(500).json({ error: 'Server error' });
@@ -103,7 +117,7 @@ app.post('/api/login', async (req, res) => {
 // Admin-only user management
 app.get('/api/users', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const rows = await allAsync('SELECT id, username, role FROM users');
+    const rows = await allAsync('SELECT id, username, role FROM users WHERE business_id=?', [req.user.businessId]);
     res.json({ data: rows });
   } catch (err) {
     console.error('users list', err.message);
@@ -114,6 +128,8 @@ app.get('/api/users', authenticateToken, requireAdmin, async (req, res) => {
 app.put('/api/users/:id/role', authenticateToken, requireAdmin, async (req, res) => {
   const { role } = req.body;
   try {
+    const target = await getAsync('SELECT id FROM users WHERE id=? AND business_id=?', [req.params.id, req.user.businessId]);
+    if (!target) return res.status(404).json({ error: 'User not found' });
     await runAsync('UPDATE users SET role=? WHERE id=?', [role, req.params.id]);
     res.json({ success: true });
   } catch (err) {
@@ -124,6 +140,8 @@ app.put('/api/users/:id/role', authenticateToken, requireAdmin, async (req, res)
 
 app.delete('/api/users/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
+    const target = await getAsync('SELECT id FROM users WHERE id=? AND business_id=?', [req.params.id, req.user.businessId]);
+    if (!target) return res.status(404).json({ error: 'User not found' });
     await runAsync('DELETE FROM users WHERE id=?', [req.params.id]);
     res.json({ success: true });
   } catch (err) {
