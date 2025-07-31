@@ -3,6 +3,11 @@ import { apiFetch } from './api';
 import './App.css';
 
 function AdminPanel() {
+  const role = localStorage.getItem('role');
+  if (role !== 'admin') {
+    return null;
+  }
+
   const [users, setUsers] = useState([]);
   const [error, setError] = useState('');
 
