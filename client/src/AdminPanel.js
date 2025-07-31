@@ -1,15 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { apiFetch } from './api';
 import './App.css';
 
 function AdminPanel() {
-  const role = localStorage.getItem('role');
-  if (role !== 'admin') {
-    return null;
-  }
-
   const [users, setUsers] = useState([]);
   const [error, setError] = useState('');
+  const role = localStorage.getItem('role');
 
   const load = async () => {
     const res = await apiFetch('http://localhost:5000/api/users');
@@ -19,6 +16,10 @@ function AdminPanel() {
   };
 
   useEffect(() => { load(); }, []);
+
+  if (role !== 'admin') {
+    return <Navigate to="/" />;
+  }
 
   const changeRole = async (id, role) => {
     await apiFetch(`http://localhost:5000/api/users/${id}/role`, {
