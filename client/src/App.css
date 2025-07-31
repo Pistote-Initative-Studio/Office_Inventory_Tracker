@@ -134,6 +134,11 @@ button:hover {
   margin: 0 auto 20px;
 }
 
+body.dark .content-box {
+  background: #444;
+  color: #fff;
+}
+
 .toolbar {
   background: linear-gradient(to bottom, #f5faff, #d9eaf9);
   padding: 10px;
@@ -145,6 +150,11 @@ button:hover {
   gap: 10px;
   margin-bottom: 1rem;
   flex-wrap: wrap;
+}
+
+body.dark .toolbar {
+  background: #555;
+  border-color: #666;
 }
 
 .chart-container {

@@ -103,6 +103,21 @@ db.serialize(() => {
     // ignore errors if column already exists
   });
 
+  // Add full_name column for users if it doesn't exist
+  db.run('ALTER TABLE users ADD COLUMN full_name TEXT', (err) => {
+    // ignore errors if column already exists
+  });
+
+  // Create table for user settings if it doesn't exist
+  db.run(`CREATE TABLE IF NOT EXISTS user_settings (
+    user_id INTEGER PRIMARY KEY,
+    theme TEXT DEFAULT 'light',
+    default_tab TEXT DEFAULT 'Inventory',
+    email_notifications INTEGER DEFAULT 1,
+    low_stock_alerts INTEGER DEFAULT 1,
+    po_updates INTEGER DEFAULT 1
+  )`);
+
   db.get('SELECT COUNT(*) AS count FROM inventory', (err, row) => {
     if (err) {
       console.error('Error counting inventory rows:', err.message);
@@ -205,9 +220,10 @@ db.serialize(() => {
       db.run('INSERT INTO businesses (name) VALUES (?)', ['Demo Business'], function () {
         const bizId = this.lastID;
         db.run(
-          'INSERT INTO users (username, password, role, business_id) VALUES (?, ?, ?, ?)',
-          ['admin', hash, 'admin', bizId]
+          'INSERT INTO users (username, password, role, business_id, full_name) VALUES (?, ?, ?, ?, ?)',
+          ['admin', hash, 'admin', bizId, 'Administrator']
         );
+        db.run('INSERT INTO user_settings (user_id) VALUES (last_insert_rowid())');
       });
     }
   });

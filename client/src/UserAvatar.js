@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './UserAvatar.css';
 
-function UserAvatar({ username, role, onLogout, onUserManagement }) {
+function UserAvatar({ username, role, onLogout, onUserManagement, onAccount, onSettings }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef();
 
@@ -26,15 +26,15 @@ function UserAvatar({ username, role, onLogout, onUserManagement }) {
       </div>
       {open && (
         <div className="avatar-menu">
-          <button type="button">Account</button>
-          <button type="button">Settings</button>
+          <button type="button" onClick={() => { onAccount(); setOpen(false); }}>Account</button>
+          <button type="button" onClick={() => { onSettings(); setOpen(false); }}>Settings</button>
           {role === 'admin' && (
             <button type="button" onClick={() => { onUserManagement(); setOpen(false); }}>
               User Management
             </button>
           )}
           <div className="menu-divider" />
-          <button type="button" onClick={onLogout}>Log Out</button>
+          <button type="button" className="logout" onClick={onLogout}>Log Out</button>
         </div>
       )}
     </div>
