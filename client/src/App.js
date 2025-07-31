@@ -64,14 +64,6 @@ function App() {
         >
           Reports
         </button>
-        {role === 'admin' && (
-          <button
-            className={activeTab === 'Admin' ? 'tab active' : 'tab'}
-            onClick={() => setActiveTab('Admin')}
-          >
-            Admin
-          </button>
-        )}
       </div>
       <div className="tab-content">
         {activeTab === 'Inventory' && (

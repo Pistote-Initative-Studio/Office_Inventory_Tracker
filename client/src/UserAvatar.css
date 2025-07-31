@@ -58,5 +58,6 @@
 .menu-divider {
   height: 1px;
   background: rgba(0, 0, 0, 0.1);
-  margin: 4px 0;
+  margin-top: 8px;
+  margin-bottom: 4px;
 }
