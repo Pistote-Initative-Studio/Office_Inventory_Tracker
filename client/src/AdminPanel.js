@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
 import { apiFetch } from './api';
 import './App.css';
 
@@ -18,7 +17,7 @@ function AdminPanel() {
   useEffect(() => { load(); }, []);
 
   if (role !== 'admin') {
-    return <Navigate to="/" />;
+    return <div>Admin only</div>;
   }
 
   const changeRole = async (id, role) => {

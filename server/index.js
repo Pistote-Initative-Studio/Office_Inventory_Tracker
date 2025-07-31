@@ -88,9 +88,10 @@ app.post('/api/register', async (req, res) => {
       }
     }
     const result = await runAsync(
-      'INSERT INTO users (username, password, role, business_id) VALUES (?, ?, ?, ?)',
-      [username, hash, role, bizId]
+      'INSERT INTO users (username, password, role, business_id, full_name) VALUES (?, ?, ?, ?, ?)',
+      [username, hash, role, bizId, username]
     );
+    await runAsync('INSERT INTO user_settings (user_id) VALUES (?)', [result.lastID]);
     const token = jwt.sign({ id: result.lastID, role, businessId: bizId }, JWT_SECRET);
     res.json({ token, role, businessId: bizId });
   } catch (err) {
@@ -146,6 +147,71 @@ app.delete('/api/users/:id', authenticateToken, requireAdmin, async (req, res) =
     res.json({ success: true });
   } catch (err) {
     console.error('delete user', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Current user account info
+app.get('/api/me', authenticateToken, async (req, res) => {
+  try {
+    const row = await getAsync(
+      'SELECT u.username, u.role, u.full_name, b.name AS businessName FROM users u LEFT JOIN businesses b ON u.business_id=b.id WHERE u.id=?',
+      [req.user.id]
+    );
+    res.json({ data: row });
+  } catch (err) {
+    console.error('me', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.put('/api/me', authenticateToken, async (req, res) => {
+  const { fullName, password } = req.body;
+  try {
+    if (fullName !== undefined) {
+      await runAsync('UPDATE users SET full_name=? WHERE id=?', [fullName, req.user.id]);
+    }
+    if (password) {
+      const hash = bcrypt.hashSync(password, 10);
+      await runAsync('UPDATE users SET password=? WHERE id=?', [hash, req.user.id]);
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error('update me', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.get('/api/settings', authenticateToken, async (req, res) => {
+  try {
+    const row = await getAsync('SELECT * FROM user_settings WHERE user_id=?', [req.user.id]);
+    res.json({ data: row });
+  } catch (err) {
+    console.error('get settings', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.put('/api/settings', authenticateToken, async (req, res) => {
+  const { theme, default_tab, email_notifications, low_stock_alerts, po_updates } = req.body;
+  try {
+    const exists = await getAsync('SELECT user_id FROM user_settings WHERE user_id=?', [req.user.id]);
+    if (!exists) {
+      await runAsync('INSERT INTO user_settings (user_id) VALUES (?)', [req.user.id]);
+    }
+    await runAsync(
+      `UPDATE user_settings SET
+        theme=COALESCE(?, theme),
+        default_tab=COALESCE(?, default_tab),
+        email_notifications=COALESCE(?, email_notifications),
+        low_stock_alerts=COALESCE(?, low_stock_alerts),
+        po_updates=COALESCE(?, po_updates)
+       WHERE user_id=?`,
+      [theme, default_tab, email_notifications, low_stock_alerts, po_updates, req.user.id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('update settings', err.message);
     res.status(500).json({ error: 'Server error' });
   }
 });
