@@ -147,3 +147,15 @@
   font-weight: bold;
   color: green;
 }
+
+.trends-empty {
+  padding: 32px;
+  text-align: center;
+  opacity: 0.8;
+}
+.trends-empty h3 {
+  margin: 0 0 8px;
+}
+.trends-empty p {
+  margin: 0;
+}

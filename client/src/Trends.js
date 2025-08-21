@@ -1,127 +1,17 @@
 import React, { useMemo, useState } from 'react';
 import './Trends.css';
 
-const monthlyData = [
-  { label: 'Jan', value: 30 },
-  { label: 'Feb', value: 45 },
-  { label: 'Mar', value: 28 },
-  { label: 'Apr', value: 60 },
-  { label: 'May', value: 80 },
-  { label: 'Jun', value: 75 },
-  { label: 'Jul', value: 90 },
-  { label: 'Aug', value: 65 },
-  { label: 'Sep', value: 70 },
-  { label: 'Oct', value: 95 },
-  { label: 'Nov', value: 85 },
-  { label: 'Dec', value: 100 },
-];
-
-const quarterlyData = [
-  { label: 'Q1', value: 120 },
-  { label: 'Q2', value: 200 },
-  { label: 'Q3', value: 180 },
-  { label: 'Q4', value: 220 },
-];
-
-const yearlyData = [
-  { label: '2021', value: 650 },
-  { label: '2022', value: 720 },
-  { label: '2023', value: 810 },
-  { label: '2024', value: 950 },
-];
-
-function scaleData(base, factor) {
-  return base.map((d) => ({ label: d.label, value: Math.round(d.value * factor) }));
-}
-
-const sampleItems = [
-  {
-    id: 1,
-    name: 'Pens',
-    lastPurchaseDate: '2024-05-18',
-    lastAmount: 100,
-    monthlyTotal: 300,
-    quarterlyTotal: 800,
-    yearlyTotal: 2500,
-    monthly: scaleData(monthlyData, 1),
-    quarterly: scaleData(quarterlyData, 1),
-    yearly: scaleData(yearlyData, 1),
-    monthlyPrice: scaleData(monthlyData, 0.5),
-    quarterlyPrice: scaleData(quarterlyData, 0.5),
-    yearlyPrice: scaleData(yearlyData, 0.5),
-  },
-  {
-    id: 2,
-    name: 'Notebooks',
-    lastPurchaseDate: '2024-05-10',
-    lastAmount: 50,
-    monthlyTotal: 260,
-    quarterlyTotal: 700,
-    yearlyTotal: 2100,
-    monthly: scaleData(monthlyData, 0.8),
-    quarterly: scaleData(quarterlyData, 0.8),
-    yearly: scaleData(yearlyData, 0.8),
-    monthlyPrice: scaleData(monthlyData, 0.4),
-    quarterlyPrice: scaleData(quarterlyData, 0.4),
-    yearlyPrice: scaleData(yearlyData, 0.4),
-  },
-  {
-    id: 3,
-    name: 'Markers',
-    lastPurchaseDate: '2024-05-22',
-    lastAmount: 30,
-    monthlyTotal: 340,
-    quarterlyTotal: 900,
-    yearlyTotal: 2800,
-    monthly: scaleData(monthlyData, 1.2),
-    quarterly: scaleData(quarterlyData, 1.2),
-    yearly: scaleData(yearlyData, 1.2),
-    monthlyPrice: scaleData(monthlyData, 0.6),
-    quarterlyPrice: scaleData(quarterlyData, 0.6),
-    yearlyPrice: scaleData(yearlyData, 0.6),
-  },
-  {
-    id: 4,
-    name: 'Staplers',
-    lastPurchaseDate: '2024-05-05',
-    lastAmount: 20,
-    monthlyTotal: 200,
-    quarterlyTotal: 540,
-    yearlyTotal: 1500,
-    monthly: scaleData(monthlyData, 0.6),
-    quarterly: scaleData(quarterlyData, 0.6),
-    yearly: scaleData(yearlyData, 0.6),
-    monthlyPrice: scaleData(monthlyData, 0.3),
-    quarterlyPrice: scaleData(quarterlyData, 0.3),
-    yearlyPrice: scaleData(yearlyData, 0.3),
-  },
-  {
-    id: 5,
-    name: 'Paper Clips',
-    lastPurchaseDate: '2024-05-15',
-    lastAmount: 200,
-    monthlyTotal: 450,
-    quarterlyTotal: 1100,
-    yearlyTotal: 3300,
-    monthly: scaleData(monthlyData, 1.5),
-    quarterly: scaleData(quarterlyData, 1.5),
-    yearly: scaleData(yearlyData, 1.5),
-    monthlyPrice: scaleData(monthlyData, 0.75),
-    quarterlyPrice: scaleData(quarterlyData, 0.75),
-    yearlyPrice: scaleData(yearlyData, 0.75),
-  },
-];
-
-function Trends({ mode = 'Quantity', onModeChange }) {
+function Trends({ mode = 'Quantity', onModeChange, items = [] }) {
   const [selectedRange, setSelectedRange] = useState('Monthly');
   const [isCompareMode, setIsCompareMode] = useState(false);
-  const [selectedItems, setSelectedItems] = useState([sampleItems[0]]);
-  const [selectedItem, setSelectedItem] = useState(sampleItems[0]);
+  const [selectedItems, setSelectedItems] = useState(items.slice(0, 1));
+  const [selectedItem, setSelectedItem] = useState(items[0] || null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: '', direction: 'asc' });
 
   const displayedItems = useMemo(() => {
-    return isCompareMode ? selectedItems : [selectedItem];
+    if (isCompareMode) return selectedItems;
+    return selectedItem ? [selectedItem] : [];
   }, [isCompareMode, selectedItem, selectedItems]);
 
   const sortedItems = useMemo(() => {
@@ -149,18 +39,22 @@ function Trends({ mode = 'Quantity', onModeChange }) {
   const seriesKey = mode === 'Price' ? `${rangeKey}Price` : rangeKey;
 
   const maxValue = useMemo(() => {
-    return Math.max(
-      ...displayedItems.flatMap((it) => it[seriesKey].map((d) => d.value))
+    const values = displayedItems.flatMap((it) =>
+      (it[seriesKey] || []).map((d) => d.value)
     );
+    return values.length ? Math.max(...values) : 0;
   }, [displayedItems, seriesKey]);
 
   const seriesData = useMemo(() => {
     const width = 600;
     const height = 160;
+    const safeMax = maxValue || 1;
     return displayedItems.map((item, idx) => {
-      const pts = item[seriesKey].map((d, i) => {
-        const x = (width / (item[seriesKey].length - 1)) * i;
-        const y = height - (d.value / maxValue) * (height - 20) + 10;
+      const series = item[seriesKey] || [];
+      const divisor = Math.max(series.length - 1, 1);
+      const pts = series.map((d, i) => {
+        const x = (width / divisor) * i;
+        const y = height - (d.value / safeMax) * (height - 20) + 10;
         return [x, y];
       });
       const path = pts
@@ -169,6 +63,11 @@ function Trends({ mode = 'Quantity', onModeChange }) {
       return { id: item.id, color: colors[idx % colors.length], pts, path };
     });
   }, [displayedItems, seriesKey, maxValue]);
+
+  const axisLabels = useMemo(() => {
+    const first = displayedItems[0];
+    return first ? first[rangeKey] || [] : [];
+  }, [displayedItems, rangeKey]);
 
   const totalKey =
     selectedRange === 'Monthly'
@@ -204,12 +103,11 @@ function Trends({ mode = 'Quantity', onModeChange }) {
 
   const handleCompareChange = (e) => {
     const checked = e.target.checked;
-    console.log('isCompareMode', checked);
     setIsCompareMode(checked);
     if (checked) {
-      setSelectedItems((prev) => (prev.length ? prev : [selectedItem]));
+      setSelectedItems((prev) => (prev.length ? prev : selectedItem ? [selectedItem] : []));
     } else {
-      setSelectedItem(selectedItems[0] || selectedItem);
+      setSelectedItem(selectedItems[0] || null);
     }
   };
 
@@ -228,14 +126,14 @@ function Trends({ mode = 'Quantity', onModeChange }) {
               >
                 {isCompareMode
                   ? `${selectedItems.length} item(s) selected`
-                  : selectedItem.name}
+                  : selectedItem ? selectedItem.name : 'Select Item'}
               </button>
               {isDropdownOpen && (
                 <ul className="dropdown-menu">
-                  {sampleItems.map((item) => {
+                  {items.map((item) => {
                     const isSelected = isCompareMode
                       ? selectedItems.some((it) => it.id === item.id)
-                      : selectedItem.id === item.id;
+                      : selectedItem && selectedItem.id === item.id;
                     return (
                       <li
                         key={item.id}
@@ -346,59 +244,71 @@ function Trends({ mode = 'Quantity', onModeChange }) {
               ))}
               </div>
             </div>
-            <svg viewBox="0 0 600 200" width="100%" height="200">
-              {/* horizontal grid lines */}
-              {[1, 2, 3, 4].map((i) => (
-                <line
-                  key={i}
-                  x1="0"
-                  y1={i * 40}
-                  x2="600"
-                  y2={i * 40}
-                  stroke="#ccc"
-                  strokeDasharray="5 5"
-                />
-              ))}
-              {/* vertical grid lines */}
-              {[1, 2, 3, 4, 5].map((i) => (
-                <line
-                  key={`v${i}`}
-                  x1={i * 100}
-                  y1="0"
-                  x2={i * 100}
-                  y2="160"
-                  stroke="#ccc"
-                  strokeDasharray="5 5"
-                />
-              ))}
-              {/* axis lines */}
-              <line x1="0" y1="0" x2="0" y2="160" stroke="#666" />
-              <line x1="0" y1="160" x2="600" y2="160" stroke="#666" />
-              {seriesData.map((series) => (
-                <g key={series.id}>
-                  <path
-                    d={series.path}
-                    fill="none"
-                    stroke={series.color}
-                    strokeWidth="3"
-                  />
-                  {series.pts.map((p, i) => (
-                    <circle
+            {displayedItems.length === 0 ? (
+              <div className="trends-empty">
+                <h3>No trend data yet</h3>
+                <p>
+                  Add items and record purchases to see weekly, monthly, and yearly
+                  trends.
+                </p>
+              </div>
+            ) : (
+              <>
+                <svg viewBox="0 0 600 200" width="100%" height="200">
+                  {/* horizontal grid lines */}
+                  {[1, 2, 3, 4].map((i) => (
+                    <line
                       key={i}
-                      cx={p[0]}
-                      cy={p[1]}
-                      r="3"
-                      fill={series.color}
+                      x1="0"
+                      y1={i * 40}
+                      x2="600"
+                      y2={i * 40}
+                      stroke="#ccc"
+                      strokeDasharray="5 5"
                     />
                   ))}
-                </g>
-              ))}
-            </svg>
-            <div className="x-axis">
-              {(displayedItems[0] || sampleItems[0])[rangeKey].map((d) => (
-                <span key={d.label}>{d.label}</span>
-              ))}
-            </div>
+                  {/* vertical grid lines */}
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <line
+                      key={`v${i}`}
+                      x1={i * 100}
+                      y1="0"
+                      x2={i * 100}
+                      y2="160"
+                      stroke="#ccc"
+                      strokeDasharray="5 5"
+                    />
+                  ))}
+                  {/* axis lines */}
+                  <line x1="0" y1="0" x2="0" y2="160" stroke="#666" />
+                  <line x1="0" y1="160" x2="600" y2="160" stroke="#666" />
+                  {seriesData.map((series) => (
+                    <g key={series.id}>
+                      <path
+                        d={series.path}
+                        fill="none"
+                        stroke={series.color}
+                        strokeWidth="3"
+                      />
+                      {series.pts.map((p, i) => (
+                        <circle
+                          key={i}
+                          cx={p[0]}
+                          cy={p[1]}
+                          r="3"
+                          fill={series.color}
+                        />
+                      ))}
+                    </g>
+                  ))}
+                </svg>
+                <div className="x-axis">
+                  {axisLabels.map((d) => (
+                    <span key={d.label}>{d.label}</span>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
