@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import './App.css';
 import InventoryTable from './InventoryTable';
 import Purchases from './Purchases';
@@ -8,14 +8,8 @@ import AdBanner from './components/AdBanner';
 
 function App() {
   const [inventoryFlag, setInventoryFlag] = useState(0);
-  const [activeTab, setActiveTab] = useState(localStorage.getItem('defaultTab') || 'Inventory');
+  const [activeTab, setActiveTab] = useState('Inventory');
   const [trendsMode, setTrendsMode] = useState('Quantity');
-
-  useEffect(() => {
-    if (localStorage.getItem('theme') === 'dark') {
-      document.body.classList.add('dark');
-    }
-  }, []);
 
   const triggerInventoryChange = () => {
     setInventoryFlag((prev) => prev + 1);
