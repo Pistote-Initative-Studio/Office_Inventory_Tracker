@@ -4,20 +4,12 @@ import InventoryTable from './InventoryTable';
 import Purchases from './Purchases';
 import Trends from './Trends';
 import Reports from './Reports';
-import Auth from './Auth';
-import AdminPanel from './AdminPanel';
-import UserAvatar from './UserAvatar';
-import AccountModal from './AccountModal';
-import SettingsModal from './SettingsModal';
+import AdBanner from './components/AdBanner';
 
 function App() {
   const [inventoryFlag, setInventoryFlag] = useState(0);
   const [activeTab, setActiveTab] = useState(localStorage.getItem('defaultTab') || 'Inventory');
   const [trendsMode, setTrendsMode] = useState('Quantity');
-  const [role, setRole] = useState(localStorage.getItem('role') || '');
-  const [username, setUsername] = useState(localStorage.getItem('username') || '');
-  const [showAccount, setShowAccount] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     if (localStorage.getItem('theme') === 'dark') {
@@ -29,27 +21,10 @@ function App() {
     setInventoryFlag((prev) => prev + 1);
   };
 
-  if (!localStorage.getItem('token')) {
-    return <Auth onAuth={(r, u) => { setRole(r); setUsername(u); }} />;
-  }
-
   return (
-    <div className="App">
+    <div className="App app-root">
       <header className="app-header">
         <h1 className="app-title">Office Supply Manager</h1>
-        <UserAvatar
-          username={username}
-          role={role}
-          onLogout={() => {
-            localStorage.removeItem('token');
-            localStorage.removeItem('role');
-            localStorage.removeItem('username');
-            window.location.reload();
-          }}
-          onUserManagement={() => setActiveTab('Admin')}
-          onAccount={() => setShowAccount(true)}
-          onSettings={() => setShowSettings(true)}
-        />
       </header>
       <div className="tabs">
         <button
@@ -101,14 +76,8 @@ function App() {
             <Reports />
           </div>
         )}
-        {activeTab === 'Admin' && role === 'admin' && (
-          <div className="content-box">
-            <AdminPanel />
-          </div>
-        )}
       </div>
-      {showAccount && <AccountModal onClose={() => setShowAccount(false)} />}
-      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+      <AdBanner />
     </div>
   );
 }
