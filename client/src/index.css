@@ -47,3 +47,11 @@ code {
   opacity: 0.8;
   font-size: 0.95rem;
 }
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+td.mono, th.mono {
+  font-variant-numeric: tabular-nums;
+}

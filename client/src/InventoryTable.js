@@ -228,9 +228,9 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
         <table>
           <thead>
             <tr>
-              <th onClick={() => handleSort('id')}>
-                ID
-                {sortConfig.key === 'id' && (
+              <th onClick={() => handleSort('serial')} className="mono">
+                Item #
+                {sortConfig.key === 'serial' && (
                   <span className="sort-indicator">
                     {sortConfig.direction === 'asc' ? '▲' : '▼'}
                   </span>
@@ -310,7 +310,9 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
                     : ''
                 }
               >
-                <td>{item.id}</td>
+                <td className="mono">
+                  {item.display_id || String(item.serial ?? '').padStart(4, '0')}
+                </td>
                 <td
                   className={`editable-cell ${
                     cellHighlight &&
