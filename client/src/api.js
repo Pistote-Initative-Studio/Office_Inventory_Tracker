@@ -14,6 +14,9 @@ export async function apiFetch(url, options = {}) {
   const path = normalizePath(url);
   const method = (options.method || 'GET').toUpperCase();
   const body = options.body ? JSON.parse(options.body) : null;
+  const u = new URL(path, window.location.origin);
+  const pathname = u.pathname;
+  const sp = u.searchParams;
 
   if (!local) {
     const headers = options.headers ? { ...options.headers } : {};
@@ -22,15 +25,27 @@ export async function apiFetch(url, options = {}) {
 
   try {
     // Inventory endpoints
-    if (path === '/inventory' && method === 'GET') {
-      const data = await Inventory.list();
+    if (pathname === '/inventory' && method === 'GET') {
+      let data = await Inventory.list();
+      const q = (sp.get('search') || '').trim().toLowerCase();
+      const cat = (sp.get('category') || '').trim();
+      if (q) {
+        data = data.filter(
+          (r) =>
+            (r.name || '').toLowerCase().includes(q) ||
+            (r.product_number || '').toLowerCase().includes(q)
+        );
+      }
+      if (cat && cat !== 'All') {
+        data = data.filter((r) => (r.category || '') === cat);
+      }
       return ok({ data });
     }
-    if (path === '/inventory' && method === 'POST') {
+    if (pathname === '/inventory' && method === 'POST') {
       const rec = await Inventory.create(body);
       return ok({ data: rec });
     }
-    const invIdMatch = path.match(/^\/inventory\/([^/?#]+)/);
+    const invIdMatch = pathname.match(/^\/inventory\/([^/?#]+)/);
     if (invIdMatch) {
       const id = invIdMatch[1];
       if (method === 'GET') return ok({ data: await Inventory.get(id) });
@@ -39,14 +54,14 @@ export async function apiFetch(url, options = {}) {
     }
 
     // Purchase Orders (Reports read from here too)
-    if (path.startsWith('/api/purchase-orders')) {
-      if (path === '/api/purchase-orders' && method === 'GET') {
+    if (pathname.startsWith('/api/purchase-orders')) {
+      if (pathname === '/api/purchase-orders' && method === 'GET') {
         return ok({ data: await PurchaseOrders.list() });
       }
-      if (path === '/api/purchase-orders' && method === 'POST') {
+      if (pathname === '/api/purchase-orders' && method === 'POST') {
         return ok({ data: await PurchaseOrders.create(body) });
       }
-      const poMatch = path.match(/^\/api\/purchase-orders\/([^/?#]+)/);
+      const poMatch = pathname.match(/^\/api\/purchase-orders\/([^/?#]+)/);
       if (poMatch) {
         const id = poMatch[1];
         if (method === 'PUT') return ok({ data: await PurchaseOrders.update(id, body) });
@@ -55,15 +70,14 @@ export async function apiFetch(url, options = {}) {
     }
 
     // Reports (date-filtered POs)
-    if (path.startsWith('/api/reports/purchase-orders')) {
-      const urlObj = new URL(path, window.location.origin);
-      const startDate = urlObj.searchParams.get('startDate') || '';
-      const endDate = urlObj.searchParams.get('endDate') || '';
+    if (pathname.startsWith('/api/reports/purchase-orders')) {
+      const startDate = sp.get('startDate') || '';
+      const endDate = sp.get('endDate') || '';
       const data = await PurchaseOrders.listByDateRange(startDate, endDate);
       return ok({ data });
     }
 
-    return fail('Unknown local endpoint: ' + path);
+    return fail('Unknown local endpoint: ' + pathname);
   } catch (e) {
     return fail(e.message || 'Local API error');
   }

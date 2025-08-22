@@ -21,6 +21,7 @@ function Purchases({ refreshFlag }) {
   const [sortLow, setSortLow] = useState({ key: '', direction: 'asc' });
   const [sortOrders, setSortOrders] = useState({ key: '', direction: 'asc' });
   const [searchTerm, setSearchTerm] = useState('');
+  const [status, setStatus] = useState(null); // {type:'error'|'info', message:''}
 
 
   const fetchOrders = async () => {
@@ -122,6 +123,13 @@ function Purchases({ refreshFlag }) {
     }, 60000);
     return () => clearInterval(interval);
   }, [showModal, editId, autoItems, customItems, notes, isAdmin]);
+
+  useEffect(() => {
+    if (status) {
+      const t = setTimeout(() => setStatus(null), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [status]);
 
   const sortedLowStock = React.useMemo(() => {
     if (!isAdmin) return [];
@@ -308,9 +316,10 @@ function Purchases({ refreshFlag }) {
       }
       fetchOrders();
       fetchDrafts();
+      setStatus({ type: 'info', message: 'Order submitted.' });
     } catch (err) {
       console.error(err);
-      alert('Error submitting order');
+      setStatus({ type: 'error', message: 'Error submitting order' });
     } finally {
       setShowModal(false);
       setSelectedIds([]);
@@ -339,6 +348,9 @@ function Purchases({ refreshFlag }) {
         />
         <button onClick={() => setShowModal(true)}>Create Purchase Order</button>
       </div>
+      {status && (
+        <div className={`status-banner ${status.type}`}>{status.message}</div>
+      )}
       <div className="section-box">
         <h3>Frequently Bought Items</h3>
         {frequentItems.length === 0 ? (
