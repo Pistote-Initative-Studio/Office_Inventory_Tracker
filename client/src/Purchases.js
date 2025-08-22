@@ -26,7 +26,7 @@ function Purchases({ refreshFlag }) {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const res = await apiFetch('http://localhost:5000/api/purchase-orders');
+      const res = await apiFetch('/api/purchase-orders');
       if (!res.ok) throw new Error('Failed to fetch orders');
       const data = await res.json();
       const list = data.data || [];
@@ -51,7 +51,7 @@ function Purchases({ refreshFlag }) {
 
   const fetchLowStock = async () => {
     try {
-      const res = await apiFetch('http://localhost:5000/inventory');
+      const res = await apiFetch('/inventory');
       if (!res.ok) throw new Error('Failed to fetch inventory');
       const data = await res.json();
       const items = (data.data || []).filter(
@@ -67,7 +67,7 @@ function Purchases({ refreshFlag }) {
 
   const fetchDrafts = async () => {
     try {
-      const res = await apiFetch('http://localhost:5000/api/purchase-orders?status=draft');
+      const res = await apiFetch('/api/purchase-orders?status=draft');
       if (!res.ok) throw new Error('Failed to fetch drafts');
       const data = await res.json();
       setDrafts(data.data || []);
@@ -78,7 +78,7 @@ function Purchases({ refreshFlag }) {
 
   const fetchFrequentItems = async () => {
     try {
-      const res = await apiFetch('http://localhost:5000/api/purchase-orders/frequent');
+      const res = await apiFetch('/api/purchase-orders/frequent');
       if (!res.ok) throw new Error('Failed to fetch frequent items');
       const data = await res.json();
       setFrequentItems(data.data || []);
@@ -268,13 +268,13 @@ function Purchases({ refreshFlag }) {
     const items = combinedItems();
     try {
       if (editId) {
-        await apiFetch(`http://localhost:5000/api/purchase-orders/${editId}`, {
+        await apiFetch(`/api/purchase-orders/${editId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ items, notes, status: 'draft' }),
         });
       } else {
-        const res = await apiFetch('http://localhost:5000/api/purchase-orders', {
+        const res = await apiFetch('/api/purchase-orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ items, notes, status: 'draft' }),
@@ -294,13 +294,13 @@ function Purchases({ refreshFlag }) {
     const items = combinedItems();
     try {
       if (editId) {
-        await apiFetch(`http://localhost:5000/api/purchase-orders/${editId}`, {
+        await apiFetch(`/api/purchase-orders/${editId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ items, notes, status: 'final' }),
         });
       } else {
-        await apiFetch('http://localhost:5000/api/purchase-orders', {
+        await apiFetch('/api/purchase-orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ items, notes, status: 'final' }),
@@ -488,7 +488,7 @@ function Purchases({ refreshFlag }) {
                     </button>
                     <button
                       onClick={async () => {
-                        await apiFetch(`http://localhost:5000/api/purchase-orders/${d.id}`, { method: 'DELETE' });
+                        await apiFetch(`/api/purchase-orders/${d.id}`, { method: 'DELETE' });
                         fetchDrafts();
                       }}
                     >
@@ -553,7 +553,6 @@ function Purchases({ refreshFlag }) {
                   </span>
                 )}
               </th>
-              <th>PDF</th>
             </tr>
           </thead>
           <tbody>
@@ -587,17 +586,6 @@ function Purchases({ refreshFlag }) {
                 </td>
                 <td>{order.orderDate}</td>
                 <td>{`$${computeTotalPrice(order).toFixed(2)}`}</td>
-                <td>
-                  {/* Open the PDF in a new tab when clicking instead of relying on anchor download */}
-                  <button
-                    onClick={() => {
-                      const url = `http://localhost:5000/api/purchase-orders/${order.id}/pdf`;
-                      window.open(url, '_blank');
-                    }}
-                  >
-                    Download
-                  </button>
-                </td>
               </tr>
             ))}
           </tbody>

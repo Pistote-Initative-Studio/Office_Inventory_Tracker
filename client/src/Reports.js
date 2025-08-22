@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import './App.css';
 import './Reports.css';
 import { apiFetch } from './api';
+import * as XLSX from 'xlsx';
 
 function Reports() {
   const [orders, setOrders] = useState([]);
@@ -17,23 +18,16 @@ function Reports() {
     typeof val === 'number' ? `$${val.toFixed(2)}` : `$${Number(val || 0).toFixed(2)}`;
 
   const fetchOrders = async () => {
-    let url = `http://localhost:5000/api/reports/purchase-orders?startDate=${startDate}&endDate=${endDate}`;
+    const url = `/api/reports/purchase-orders?startDate=${startDate}&endDate=${endDate}`;
     const res = await apiFetch(url);
     const data = await res.json();
     setOrders(data.data || []);
   };
 
   const fetchItems = async () => {
-    const res = await apiFetch('http://localhost:5000/inventory');
+    const res = await apiFetch('/inventory');
     const data = await res.json();
     setItems(data.data || []);
-  };
-
-  const fetchItemData = async (id) => {
-    if (!id) return;
-    const res = await apiFetch(`http://localhost:5000/api/reports/item/${id}`);
-    const data = await res.json();
-    setItemData(data.data || []);
   };
 
   useEffect(() => {
@@ -45,8 +39,20 @@ function Reports() {
   }, [startDate, endDate]);
 
   useEffect(() => {
-    fetchItemData(selectedItem);
-  }, [selectedItem]);
+    if (!selectedItem) {
+      setItemData([]);
+      return;
+    }
+    const itemName = items.find((x) => x.id.toString() === selectedItem)?.name;
+    if (!itemName) {
+      setItemData([]);
+      return;
+    }
+    const data = orders.filter((o) =>
+      (o.items || []).some((i) => i.itemName === itemName) || o.itemName === itemName
+    );
+    setItemData(data);
+  }, [selectedItem, orders, items]);
 
   const sortedOrders = React.useMemo(() => {
     const data = [...orders];
@@ -116,15 +122,37 @@ function Reports() {
     });
   };
 
-  const exportOrders = (type) => {
-    const url = `http://localhost:5000/api/reports/purchase-orders/${type}?startDate=${startDate}&endDate=${endDate}`;
-    window.open(url, '_blank');
-  };
+  const exportOrdersExcel = () => {
+    const rows = orders.map((o) => ({
+      Date: o.orderDate || '',
+      Supplier: o.supplier || '',
+      Notes: o.notes || '',
+      Status: o.status || '',
+      Total: (o.items || []).reduce((s, it) => s + Number(it.price || 0), 0)
+    }));
+    const itemsRows = [];
+    orders.forEach((o) => (o.items || []).forEach((it) => itemsRows.push({
+      Date: o.orderDate || '',
+      Supplier: o.supplier || '',
+      Item: it.itemName || '',
+      Quantity: Number(it.quantity || 0),
+      UnitPrice: Number(it.price || 0),
+      LineTotal: Number(it.quantity || 0) * Number(it.price || 0)
+    })));
 
-  const exportItem = (type) => {
-    if (!selectedItem) return;
-    const url = `http://localhost:5000/api/reports/item/${selectedItem}/${type}`;
-    window.open(url, '_blank');
+    const wb = XLSX.utils.book_new();
+    const ws1 = XLSX.utils.json_to_sheet(rows);
+    const ws2 = XLSX.utils.json_to_sheet(itemsRows);
+    XLSX.utils.book_append_sheet(wb, ws1, 'Purchase Orders');
+    XLSX.utils.book_append_sheet(wb, ws2, 'Items');
+    const buf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+    const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'purchase_orders.xlsx';
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -139,8 +167,7 @@ function Reports() {
           End Date
           <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
         </label>
-        <button onClick={() => exportOrders('excel')}>Export to Excel</button>
-        <button onClick={() => exportOrders('pdf')}>Export to PDF</button>
+        <button onClick={exportOrdersExcel}>Export to Excel</button>
       </div>
       <table>
         <thead>
@@ -207,8 +234,6 @@ function Reports() {
             <option key={it.id} value={it.id}>{it.name}</option>
           ))}
         </select>
-        <button onClick={() => exportItem('excel')}>Export to Excel</button>
-        <button onClick={() => exportItem('pdf')}>Export to PDF</button>
       </div>
       {itemData.length > 0 && (
         <table>

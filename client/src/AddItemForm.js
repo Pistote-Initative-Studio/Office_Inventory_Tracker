@@ -62,7 +62,7 @@ function AddItemForm({ onSuccess }) {
       return;
     }
     try {
-      const res = await apiFetch('http://localhost:5000/inventory', {
+      const res = await apiFetch('/inventory', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
