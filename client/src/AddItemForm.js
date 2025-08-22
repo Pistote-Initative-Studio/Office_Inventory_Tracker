@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import './AddItemForm.css';
 import { apiFetch } from './api';
 
@@ -16,13 +16,6 @@ function AddItemForm({ onSuccess }) {
   });
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState(null); // {type:'error'|'info', message:''}
-
-  useEffect(() => {
-    if (status) {
-      const timer = setTimeout(() => setStatus(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [status]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -59,27 +52,12 @@ function AddItemForm({ onSuccess }) {
     try {
       const res = await apiFetch('/inventory', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          category: formData.category,
-          quantity: Number(formData.quantity),
-          unit: formData.unit,
-          restock_threshold: Number(formData.restock_threshold),
-          supplier: formData.supplier,
-          location: formData.location,
-          product_number: formData.product_number,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
       });
-      if (res.status === 400) {
-        const data = await res.json();
-        setStatus({ type: 'error', message: data.error || 'Invalid input data' });
-        return;
-      }
-      if (!res.ok) {
-        throw new Error('Failed to add item');
+      const payload = await res.json();
+      if (!res.ok || !payload.success) {
+        throw new Error(payload.error || 'Error adding item');
       }
       setFormData({
         name: '',
@@ -92,11 +70,12 @@ function AddItemForm({ onSuccess }) {
         product_number: '',
       });
       setErrors({});
-      setStatus({ type: 'info', message: 'Item added successfully!' });
+      setStatus({ type: 'info', message: 'Item added' });
+      setTimeout(() => setStatus(null), 2000);
       if (onSuccess) onSuccess();
     } catch (err) {
       console.error(err);
-      setStatus({ type: 'error', message: 'Error adding item' });
+      setStatus({ type: 'error', message: err.message || 'Error adding item' });
     }
   };
 

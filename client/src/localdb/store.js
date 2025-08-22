@@ -6,16 +6,38 @@ export const Inventory = {
   async list() { return (await (await getDB()).getAll('inventory')); },
   async get(id) { return (await (await getDB()).get('inventory', id)); },
   async create(data) {
-    const now = new Date().toISOString();
-    const rec = { id: uuid(), last_price: data.last_price ?? null, ...data };
-    await (await getDB()).add('inventory', rec);
+    const name = String(data?.name ?? '').trim();
+    if (!name) throw new Error('Name is required');
+
+    const rec = {
+      id: uuid(),
+      name,
+      category: (data.category ?? '').trim(),
+      quantity: Number(data.quantity ?? 0),
+      unit: (data.unit ?? '').trim(),
+      restock_threshold: Number(data.restock_threshold ?? 0),
+      supplier: (data.supplier ?? '').trim(),
+      location: (data.location ?? '').trim(),
+      product_number: (data.product_number ?? '').trim(),
+      last_price: data.last_price != null && data.last_price !== '' ? Number(data.last_price) : null,
+    };
+
+    const db = await getDB();
+    await db.add('inventory', rec);
     return rec;
   },
   async update(id, patch) {
     const db = await getDB();
     const cur = await db.get('inventory', id);
     if (!cur) throw new Error('Not found');
-    const rec = { ...cur, ...patch };
+    const rec = {
+      ...cur,
+      ...patch,
+      name: patch?.name != null ? String(patch.name).trim() : cur.name,
+      quantity: patch?.quantity != null ? Number(patch.quantity) : cur.quantity,
+      restock_threshold: patch?.restock_threshold != null ? Number(patch.restock_threshold) : cur.restock_threshold,
+      last_price: patch?.last_price != null && patch.last_price !== '' ? Number(patch.last_price) : cur.last_price,
+    };
     await db.put('inventory', rec);
     return rec;
   },
