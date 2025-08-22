@@ -2,15 +2,29 @@ import { getDB } from './indexedDb';
 
 const uuid = () => (crypto?.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2));
 
+const pad4 = (n) => String(n).padStart(4, '0');
+
+async function getNextInventorySeq(db) {
+  const key = 'inventory_seq';
+  const cur = await db.get('settings', key);
+  const next = (cur?.value ?? 0) + 1;
+  await db.put('settings', { key, value: next });
+  return next;
+}
+
 export const Inventory = {
   async list() { return (await (await getDB()).getAll('inventory')); },
   async get(id) { return (await (await getDB()).get('inventory', id)); },
   async create(data) {
+    const db = await getDB();
     const name = String(data?.name ?? '').trim();
     if (!name) throw new Error('Name is required');
 
+    const next = await getNextInventorySeq(db);
     const rec = {
       id: uuid(),
+      serial: next,
+      display_id: pad4(next),
       name,
       category: (data.category ?? '').trim(),
       quantity: Number(data.quantity ?? 0),
@@ -22,7 +36,6 @@ export const Inventory = {
       last_price: data.last_price != null && data.last_price !== '' ? Number(data.last_price) : null,
     };
 
-    const db = await getDB();
     await db.add('inventory', rec);
     return rec;
   },
@@ -85,6 +98,27 @@ export const Settings = {
   async get(key) { return (await (await getDB()).get('settings', key)); },
   async set(key, value) { await (await getDB()).put('settings', { key, value }); }
 };
+
+export async function ensureInventorySerials() {
+  const db = await getDB();
+  const items = await db.getAll('inventory');
+  let maxSerial = 0;
+  for (const it of items) {
+    if (typeof it.serial === 'number' && it.serial > maxSerial) maxSerial = it.serial;
+  }
+  const seq = await db.get('settings', 'inventory_seq');
+  if ((seq?.value ?? 0) < maxSerial) {
+    await db.put('settings', { key: 'inventory_seq', value: maxSerial });
+  }
+  for (const it of items) {
+    if (it.serial == null || it.display_id == null) {
+      const next = await getNextInventorySeq(db);
+      it.serial = next;
+      it.display_id = pad4(next);
+      await db.put('inventory', it);
+    }
+  }
+}
 
 export async function exportAll() {
   const db = await getDB();
