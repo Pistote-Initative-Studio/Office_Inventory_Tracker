@@ -23,3 +23,27 @@ code {
   display: flex;
   flex-direction: column;
 }
+
+.status-banner {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+.status-banner.error {
+  background: #ffe8e8;
+  border: 1px solid #f5b5b5;
+  color: #9b2226;
+}
+.status-banner.info {
+  background: #eef7ff;
+  border: 1px solid #b7d7ff;
+  color: #084c8d;
+}
+
+.empty-state {
+  padding: 24px;
+  text-align: center;
+  opacity: 0.8;
+  font-size: 0.95rem;
+}

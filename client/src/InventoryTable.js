@@ -12,9 +12,9 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
   const [cellHighlight, setCellHighlight] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [filteredData, setFilteredData] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: '', direction: 'asc' });
+  const [status, setStatus] = useState(null); // {type:'error', message:''}
 
   useEffect(() => {
     if (successMsg || editApiError) {
@@ -29,7 +29,9 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
   const fetchItems = async () => {
     setLoading(true);
     try {
-      const res = await apiFetch('/inventory');
+      const res = await apiFetch(
+        `/inventory?search=${encodeURIComponent(searchTerm)}&category=${encodeURIComponent(selectedCategory)}`
+      );
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       const list = (data.data || []).map((it) => ({
@@ -41,9 +43,10 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
             : it.restock_threshold,
       }));
       setItems(list);
+      setStatus(null);
     } catch (err) {
       console.error(err);
-      alert('Error fetching inventory');
+      setStatus({ type: 'error', message: 'Could not load inventory.' });
     } finally {
       setLoading(false);
     }
@@ -51,26 +54,11 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
 
   useEffect(() => {
     fetchItems();
-  }, [refreshFlag]);
-
-  useEffect(() => {
-    let data = items;
-    if (selectedCategory) {
-      data = data.filter((item) => item.category === selectedCategory);
-    }
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      data = data.filter(
-        (item) =>
-          item.name.toLowerCase().includes(term) ||
-          (item.category && item.category.toLowerCase().includes(term))
-      );
-    }
-    setFilteredData(data);
-  }, [items, searchTerm, selectedCategory]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshFlag, searchTerm, selectedCategory]);
 
   const sortedData = React.useMemo(() => {
-    const data = [...filteredData];
+    const data = [...items];
     if (sortConfig.key) {
       data.sort((a, b) => {
         const aVal = a[sortConfig.key];
@@ -86,7 +74,7 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
       });
     }
     return data;
-  }, [filteredData, sortConfig]);
+  }, [items, sortConfig]);
 
   const handleSort = (key) => {
     setSortConfig((prev) => {
@@ -105,7 +93,7 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
       if (onInventoryChange) onInventoryChange();
     } catch (err) {
       console.error(err);
-      alert('Error deleting item');
+      setStatus({ type: 'error', message: 'Could not delete item.' });
     }
   };
 
@@ -204,6 +192,9 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
           <div className={`status-message ${statusType}`}>{statusMessage}</div>
         )}
       </div>
+      {status?.type === 'error' && (
+        <div className="status-banner error">{status.message}</div>
+      )}
       <div className="toolbar">
         <button onClick={fetchItems}>Refresh</button>
         <input
@@ -229,6 +220,10 @@ function InventoryTable({ refreshFlag, onInventoryChange }) {
       </div>
       {loading ? (
         <p>Loading...</p>
+      ) : !status && items.length === 0 ? (
+        <div className="empty-state">
+          No items yet — click “Add Item” to get started.
+        </div>
       ) : (
         <table>
           <thead>

@@ -15,25 +15,20 @@ function AddItemForm({ onSuccess }) {
     product_number: '',
   });
   const [errors, setErrors] = useState({});
-  const [apiError, setApiError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+  const [status, setStatus] = useState(null); // {type:'error'|'info', message:''}
 
   useEffect(() => {
-    if (successMsg || apiError) {
-      const timer = setTimeout(() => {
-        setSuccessMsg('');
-        setApiError('');
-      }, 3000);
+    if (status) {
+      const timer = setTimeout(() => setStatus(null), 3000);
       return () => clearTimeout(timer);
     }
-  }, [successMsg, apiError]);
+  }, [status]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: '' }));
-    setApiError('');
-    setSuccessMsg('');
+    setStatus(null);
   };
 
   const validate = () => {
@@ -80,7 +75,7 @@ function AddItemForm({ onSuccess }) {
       });
       if (res.status === 400) {
         const data = await res.json();
-        setApiError(data.error || 'Invalid input data');
+        setStatus({ type: 'error', message: data.error || 'Invalid input data' });
         return;
       }
       if (!res.ok) {
@@ -97,20 +92,19 @@ function AddItemForm({ onSuccess }) {
         product_number: '',
       });
       setErrors({});
-      setApiError('');
-      setSuccessMsg('Item added successfully!');
+      setStatus({ type: 'info', message: 'Item added successfully!' });
       if (onSuccess) onSuccess();
     } catch (err) {
       console.error(err);
-      alert('Error adding item');
+      setStatus({ type: 'error', message: 'Error adding item' });
     }
   };
 
   return (
     <form className="add-item-form" onSubmit={handleSubmit}>
       <h2>Add New Item</h2>
-      {apiError && (
-        <div className="status-message error-message">{apiError}</div>
+      {status && (
+        <div className={`status-banner ${status.type}`}>{status.message}</div>
       )}
       <div>
         <label>Name:</label>
@@ -179,9 +173,6 @@ function AddItemForm({ onSuccess }) {
         />
       </div>
       <button type="submit">Add Item</button>
-      {successMsg && (
-        <div className="status-message success-message">{successMsg}</div>
-      )}
     </form>
   );
 }
