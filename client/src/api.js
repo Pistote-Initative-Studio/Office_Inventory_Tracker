@@ -19,7 +19,18 @@ export async function apiFetch(url, options = {}) {
   const local = process.env.REACT_APP_DATA_MODE === 'local';
   if (!local) {
     const headers = options.headers ? { ...options.headers } : {};
-    return fetch(url, { ...options, headers });
+    const resp = await fetch(url, { ...options, headers });
+    const ct = resp.headers.get('content-type') || '';
+    if (ct.includes('text/html')) {
+      return {
+        ok: false,
+        json: async () => ({
+          success: false,
+          error: 'Received HTML (is local mode off?)',
+        }),
+      };
+    }
+    return resp;
   }
 
   const method = (options.method || 'GET').toUpperCase();
