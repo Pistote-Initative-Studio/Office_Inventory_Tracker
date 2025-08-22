@@ -1,59 +1,56 @@
 import { Inventory, PurchaseOrders } from './localdb/store';
 
-function normalizePath(url) {
-  try {
-    const u = new URL(url, window.location.origin);
-    return u.pathname + (u.search || '');
-  } catch {
-    return url; // assume already a path
+function toPath(url) {
+  try { const u = new URL(url, window.location.origin); return [u.pathname, u.searchParams]; }
+  catch { const u = new URL(url, window.location.origin); return [u.pathname, u.searchParams]; }
+}
+
+function parseBody(b) {
+  if (!b) return null;
+  if (typeof b === 'string') { try { return JSON.parse(b); } catch { return null; } }
+  if (b instanceof FormData) {
+    const obj = {}; b.forEach((v, k) => { obj[k] = v; }); return obj;
   }
+  if (typeof b === 'object') return b;
+  return null;
 }
 
 export async function apiFetch(url, options = {}) {
   const local = process.env.REACT_APP_DATA_MODE === 'local';
-  const path = normalizePath(url);
-  const method = (options.method || 'GET').toUpperCase();
-  const body = options.body ? JSON.parse(options.body) : null;
-  const u = new URL(path, window.location.origin);
-  const pathname = u.pathname;
-  const sp = u.searchParams;
-
   if (!local) {
     const headers = options.headers ? { ...options.headers } : {};
     return fetch(url, { ...options, headers });
   }
 
+  const method = (options.method || 'GET').toUpperCase();
+  const [pathname, sp] = toPath(url);
+  const body = parseBody(options.body);
+
   try {
-    // Inventory endpoints
+    // INVENTORY
     if (pathname === '/inventory' && method === 'GET') {
       let data = await Inventory.list();
       const q = (sp.get('search') || '').trim().toLowerCase();
       const cat = (sp.get('category') || '').trim();
-      if (q) {
-        data = data.filter(
-          (r) =>
-            (r.name || '').toLowerCase().includes(q) ||
-            (r.product_number || '').toLowerCase().includes(q)
-        );
-      }
-      if (cat && cat !== 'All') {
-        data = data.filter((r) => (r.category || '') === cat);
-      }
+      if (q) data = data.filter(r =>
+        (r.name || '').toLowerCase().includes(q) ||
+        (r.product_number || '').toLowerCase().includes(q)
+      );
+      if (cat && cat !== 'All') data = data.filter(r => (r.category || '') === cat);
       return ok({ data });
     }
     if (pathname === '/inventory' && method === 'POST') {
-      const rec = await Inventory.create(body);
+      const rec = await Inventory.create(body || {});
       return ok({ data: rec });
     }
-    const invIdMatch = pathname.match(/^\/inventory\/([^/?#]+)/);
-    if (invIdMatch) {
-      const id = invIdMatch[1];
-      if (method === 'GET') return ok({ data: await Inventory.get(id) });
-      if (method === 'PUT') return ok({ data: await Inventory.update(id, body) });
-      if (method === 'DELETE') { await Inventory.remove(id); return ok({ data: { deleted: 1 } }); }
+    const invId = pathname.match(/^\/inventory\/([^/?#]+)/)?.[1];
+    if (invId) {
+      if (method === 'GET') return ok({ data: await Inventory.get(invId) });
+      if (method === 'PUT') return ok({ data: await Inventory.update(invId, body || {}) });
+      if (method === 'DELETE') { await Inventory.remove(invId); return ok({ data: { deleted: 1 } }); }
     }
 
-    // Purchase Orders (Reports read from here too)
+    // PURCHASE ORDERS + REPORTS (unchanged paths)
     if (pathname.startsWith('/api/purchase-orders')) {
       if (pathname === '/api/purchase-orders' && method === 'GET') {
         return ok({ data: await PurchaseOrders.list() });
@@ -69,7 +66,6 @@ export async function apiFetch(url, options = {}) {
       }
     }
 
-    // Reports (date-filtered POs)
     if (pathname.startsWith('/api/reports/purchase-orders')) {
       const startDate = sp.get('startDate') || '';
       const endDate = sp.get('endDate') || '';
@@ -77,15 +73,13 @@ export async function apiFetch(url, options = {}) {
       return ok({ data });
     }
 
-    return fail('Unknown local endpoint: ' + pathname);
+    return fail(`Unknown local endpoint: ${pathname}`);
   } catch (e) {
+    console.error('Local API error', pathname, e);
     return fail(e.message || 'Local API error');
   }
 }
 
-function ok(payload) {
-  return { ok: true, json: async () => ({ success: true, ...payload }) };
-}
-function fail(msg) {
-  return { ok: false, json: async () => ({ success: false, error: msg }) };
-}
+function ok(payload)  { return { ok: true,  json: async () => ({ success: true,  ...payload }) }; }
+function fail(error)  { return { ok: false, json: async () => ({ success: false, error }) }; }
+
