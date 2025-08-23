@@ -50,8 +50,9 @@ code {
 
 .mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
 }
 
-td.mono, th.mono {
-  font-variant-numeric: tabular-nums;
+th input[type="checkbox"] {
+  transform: translateY(1px);
 }

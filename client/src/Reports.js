@@ -1,8 +1,35 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import './App.css';
 import './Reports.css';
 import { apiFetch } from './api';
 import * as XLSX from 'xlsx';
+import { formatDate } from './utils/format';
+
+const orderSummary = (o) => {
+  const items = o.items || [];
+  const total = items.reduce(
+    (s, it) => s + Number(it.quantity || 0) * Number(it.price || 0),
+    0
+  );
+  const itemsList = items.map((it) => it.itemName || '').join(', ');
+  const qtyList = items.map((it) => Number(it.quantity || 0)).join(', ');
+  const unitPriceList = items
+    .map((it) => Number(it.price || 0).toFixed(2))
+    .join(', ');
+  const suppliers = Array.from(
+    new Set(items.map((it) => it.supplier || '').filter(Boolean))
+  ).join(', ');
+  return {
+    id: o.id,
+    date: o.orderDate,
+    suppliers,
+    itemsList,
+    qtyList,
+    unitPriceList,
+    total: Number(total.toFixed(2)),
+    items,
+  };
+};
 
 function Reports() {
   const [orders, setOrders] = useState([]);
@@ -11,8 +38,8 @@ function Reports() {
   const [items, setItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState('');
   const [itemData, setItemData] = useState([]);
-  const [sortOrders, setSortOrders] = useState({ key: '', direction: 'asc' });
   const [sortItems, setSortItems] = useState({ key: '', direction: 'asc' });
+  const [selected, setSelected] = useState(new Set());
 
   const formatCurrency = (val) =>
     typeof val === 'number' ? `$${val.toFixed(2)}` : `$${Number(val || 0).toFixed(2)}`;
@@ -61,24 +88,20 @@ function Reports() {
     setItemData(data);
   }, [selectedItem, orders, items]);
 
-  const sortedOrders = React.useMemo(() => {
-    const data = [...orders];
-    if (sortOrders.key) {
-      data.sort((a, b) => {
-        const aVal = a[sortOrders.key];
-        const bVal = b[sortOrders.key];
-        if (aVal == null) return 1;
-        if (bVal == null) return -1;
-        if (typeof aVal === 'number' && typeof bVal === 'number') {
-          return sortOrders.direction === 'asc' ? aVal - bVal : bVal - aVal;
-        }
-        return sortOrders.direction === 'asc'
-          ? String(aVal).localeCompare(String(bVal))
-          : String(bVal).localeCompare(String(aVal));
-      });
-    }
-    return data;
-  }, [orders, sortOrders]);
+  const rows = useMemo(() => (orders || []).map(orderSummary), [orders]);
+  const filtered = useMemo(() => {
+    const within = (o) => {
+      const t = new Date(o.date).getTime();
+      return (
+        (!startDate || t >= new Date(startDate).getTime()) &&
+        (!endDate || t <= new Date(endDate).getTime())
+      );
+    };
+    return rows.filter(within);
+  }, [rows, startDate, endDate]);
+  const selectedRows = selected.size
+    ? filtered.filter((r) => selected.has(r.id))
+    : filtered;
 
   const sortedItemData = React.useMemo(() => {
     const data = [...itemData];
@@ -111,15 +134,6 @@ function Reports() {
     return data;
   }, [itemData, sortItems]);
 
-  const handleOrderSort = (key) => {
-    setSortOrders((prev) => {
-      if (prev.key === key) {
-        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
-      }
-      return { key, direction: 'asc' };
-    });
-  };
-
   const handleItemSort = (key) => {
     setSortItems((prev) => {
       if (prev.key === key) {
@@ -129,37 +143,42 @@ function Reports() {
     });
   };
 
-  const exportOrdersExcel = () => {
-    const rows = orders.map((o) => ({
-      Date: o.orderDate || '',
-      Supplier: o.supplier || '',
-      Notes: o.notes || '',
-      Status: o.status || '',
-      Total: o.total
+  const exportSelectedToExcel = () => {
+    const summaryRows = selectedRows.map((r) => ({
+      'Order ID': r.id,
+      Date: formatDate(r.date),
+      'Supplier(s)': r.suppliers,
+      Items: r.itemsList,
+      Quantities: r.qtyList,
+      'Unit Prices': r.unitPriceList,
+      'Total Cost': Number(r.total.toFixed(2)),
     }));
-    const itemsRows = [];
-    orders.forEach((o) => (o.items || []).forEach((it) => itemsRows.push({
-      Date: o.orderDate || '',
-      Supplier: o.supplier || '',
-      Item: it.itemName || '',
-      Quantity: Number(it.quantity || 0),
-      UnitPrice: Number(it.price || 0),
-      LineTotal: Number(it.quantity || 0) * Number(it.price || 0)
-    })));
+
+    const detailRows = [];
+    selectedRows.forEach((r) => {
+      (r.items || []).forEach((it) => {
+        detailRows.push({
+          'Order ID': r.id,
+          Date: formatDate(r.date),
+          Item: it.itemName || '',
+          Quantity: Number(it.quantity || 0),
+          Unit: it.unit || '',
+          Supplier: it.supplier || '',
+          'Product Number': it.product_number || '',
+          'Unit Price': Number(it.price || 0),
+          'Line Total': Number(
+            (Number(it.quantity || 0) * Number(it.price || 0)).toFixed(2)
+          ),
+        });
+      });
+    });
 
     const wb = XLSX.utils.book_new();
-    const ws1 = XLSX.utils.json_to_sheet(rows);
-    const ws2 = XLSX.utils.json_to_sheet(itemsRows);
-    XLSX.utils.book_append_sheet(wb, ws1, 'Purchase Orders');
-    XLSX.utils.book_append_sheet(wb, ws2, 'Items');
-    const buf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
-    const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'purchase_orders.xlsx';
-    a.click();
-    URL.revokeObjectURL(url);
+    const ws1 = XLSX.utils.json_to_sheet(summaryRows);
+    const ws2 = XLSX.utils.json_to_sheet(detailRows);
+    XLSX.utils.book_append_sheet(wb, ws1, 'Summary');
+    XLSX.utils.book_append_sheet(wb, ws2, 'Items Detail');
+    XLSX.writeFile(wb, 'purchase_orders.xlsx');
   };
 
   return (
@@ -174,61 +193,47 @@ function Reports() {
           End Date
           <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
         </label>
-        <button onClick={exportOrdersExcel}>Export to Excel</button>
+        <button onClick={exportSelectedToExcel}>Export to Excel</button>
       </div>
       <table>
         <thead>
           <tr>
-            <th onClick={() => handleOrderSort('orderDate')}>
-              Date
-              {sortOrders.key === 'orderDate' && (
-                <span className="sort-indicator">
-                  {sortOrders.direction === 'asc' ? '▲' : '▼'}
-                </span>
-              )}
+            <th>
+              <input
+                type="checkbox"
+                checked={selected.size && selected.size === filtered.length}
+                onChange={() => {
+                  if (selected.size === filtered.length) setSelected(new Set());
+                  else setSelected(new Set(filtered.map((r) => r.id)));
+                }}
+              />
             </th>
-            <th onClick={() => handleOrderSort('supplier')}>
-              Supplier
-              {sortOrders.key === 'supplier' && (
-                <span className="sort-indicator">
-                  {sortOrders.direction === 'asc' ? '▲' : '▼'}
-                </span>
-              )}
-            </th>
-            <th onClick={() => handleOrderSort('items')}>
-              Items
-              {sortOrders.key === 'items' && (
-                <span className="sort-indicator">
-                  {sortOrders.direction === 'asc' ? '▲' : '▼'}
-                </span>
-              )}
-            </th>
-            <th onClick={() => handleOrderSort('quantity')}>
-              Quantity
-              {sortOrders.key === 'quantity' && (
-                <span className="sort-indicator">
-                  {sortOrders.direction === 'asc' ? '▲' : '▼'}
-                </span>
-              )}
-            </th>
-            <th onClick={() => handleOrderSort('total')}>
-              Total Cost
-              {sortOrders.key === 'total' && (
-                <span className="sort-indicator">
-                  {sortOrders.direction === 'asc' ? '▲' : '▼'}
-                </span>
-              )}
-            </th>
+            <th>Date</th>
+            <th>Supplier(s)</th>
+            <th>Items</th>
+            <th>Quantity</th>
+            <th>Total Cost</th>
           </tr>
         </thead>
         <tbody>
-          {sortedOrders.map((o) => (
-            <tr key={o.id}>
-              <td>{o.orderDate}</td>
-              <td>{o.supplier}</td>
-              <td>{o.items ? o.items.map((i) => i.itemName).join(', ') : o.itemName}</td>
-              <td>{o.items ? o.items.map((i) => i.quantity).join(', ') : o.quantity}</td>
-              <td>{formatCurrency(o.total)}</td>
+          {filtered.map((r) => (
+            <tr key={r.id}>
+              <td>
+                <input
+                  type="checkbox"
+                  checked={selected.has(r.id)}
+                  onChange={() => {
+                    const next = new Set(selected);
+                    next.has(r.id) ? next.delete(r.id) : next.add(r.id);
+                    setSelected(next);
+                  }}
+                />
+              </td>
+              <td>{formatDate(r.date)}</td>
+              <td>{r.suppliers}</td>
+              <td>{r.itemsList}</td>
+              <td>{r.qtyList}</td>
+              <td>{formatCurrency(r.total)}</td>
             </tr>
           ))}
         </tbody>
