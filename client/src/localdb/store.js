@@ -57,6 +57,15 @@ export const Inventory = {
   async remove(id) { await (await getDB()).delete('inventory', id); }
 };
 
+const normalizePOItem = (it) => ({
+  itemName: String(it?.itemName ?? '').trim(),
+  quantity: Number(it?.quantity ?? 0),
+  unit: String(it?.unit ?? '').trim(),
+  supplier: String(it?.supplier ?? '').trim(),
+  product_number: String(it?.product_number ?? '').trim(),
+  price: Number(it?.price ?? 0),
+});
+
 export const PurchaseOrders = {
   async list() { return (await (await getDB()).getAll('purchaseOrders')); },
   async listByDateRange(startISO, endISO) {
@@ -71,14 +80,18 @@ export const PurchaseOrders = {
   async get(id) { return (await (await getDB()).get('purchaseOrders', id)); },
   async create(data) {
     const now = new Date().toISOString();
+    const items = Array.isArray(data.items)
+      ? data.items.map(normalizePOItem)
+      : Array.isArray(data.orderItems)
+        ? data.orderItems.map(normalizePOItem)
+        : [];
     const rec = {
       id: uuid(),
       orderDate: data.orderDate || now,
-      supplier: data.supplier || '',
       notes: data.notes || '',
-      items: Array.isArray(data.items) ? data.items : (data.orderItems || []),
       status: data.status || 'final',
-      last_modified: now
+      items,
+      last_modified: now,
     };
     await (await getDB()).add('purchaseOrders', rec);
     return rec;
@@ -87,7 +100,17 @@ export const PurchaseOrders = {
     const db = await getDB();
     const cur = await db.get('purchaseOrders', id);
     if (!cur) throw new Error('Not found');
-    const rec = { ...cur, ...patch, last_modified: new Date().toISOString() };
+    const items = patch.items
+      ? patch.items.map(normalizePOItem)
+      : patch.orderItems
+        ? patch.orderItems.map(normalizePOItem)
+        : cur.items;
+    const rec = {
+      ...cur,
+      ...patch,
+      items,
+      last_modified: new Date().toISOString(),
+    };
     await db.put('purchaseOrders', rec);
     return rec;
   },
