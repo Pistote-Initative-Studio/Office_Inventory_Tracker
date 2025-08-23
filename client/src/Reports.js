@@ -21,7 +21,14 @@ function Reports() {
     const url = `/api/reports/purchase-orders?startDate=${startDate}&endDate=${endDate}`;
     const res = await apiFetch(url);
     const data = await res.json();
-    setOrders(data.data || []);
+    const list = (data.data || []).map((o) => ({
+      ...o,
+      total: (o.items || []).reduce(
+        (s, it) => s + Number(it.quantity || 0) * Number(it.price || 0),
+        0
+      ),
+    }));
+    setOrders(list);
   };
 
   const fetchItems = async () => {
@@ -128,7 +135,7 @@ function Reports() {
       Supplier: o.supplier || '',
       Notes: o.notes || '',
       Status: o.status || '',
-      Total: (o.items || []).reduce((s, it) => s + Number(it.price || 0), 0)
+      Total: o.total
     }));
     const itemsRows = [];
     orders.forEach((o) => (o.items || []).forEach((it) => itemsRows.push({
@@ -204,9 +211,9 @@ function Reports() {
                 </span>
               )}
             </th>
-            <th onClick={() => handleOrderSort('price')}>
+            <th onClick={() => handleOrderSort('total')}>
               Total Cost
-              {sortOrders.key === 'price' && (
+              {sortOrders.key === 'total' && (
                 <span className="sort-indicator">
                   {sortOrders.direction === 'asc' ? '▲' : '▼'}
                 </span>
@@ -221,7 +228,7 @@ function Reports() {
               <td>{o.supplier}</td>
               <td>{o.items ? o.items.map((i) => i.itemName).join(', ') : o.itemName}</td>
               <td>{o.items ? o.items.map((i) => i.quantity).join(', ') : o.quantity}</td>
-              <td>{formatCurrency(o.price)}</td>
+              <td>{formatCurrency(o.total)}</td>
             </tr>
           ))}
         </tbody>
