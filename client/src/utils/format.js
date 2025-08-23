@@ -10,3 +10,7 @@ export function formatDate(iso, { withTime = false } = {}) {
   const mm = String(d.getMinutes()).padStart(2, '0');
   return `${y}-${m}-${day} ${hh}:${mm}`;
 }
+
+export function money(n) {
+  return `$${Number(n || 0).toFixed(2)}`;
+}

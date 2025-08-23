@@ -1,7 +1,33 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import './Purchases.css';
 import { apiFetch } from './api';
-import { formatDate } from './utils/format';
+import { formatDate, money } from './utils/format';
+
+const orderSummary = (o) => {
+  const items = o.items || [];
+  const total = items.reduce(
+    (s, it) => s + Number(it.quantity || 0) * Number(it.price || 0),
+    0
+  );
+  const itemsList = items.map((it) => it.itemName || '').join(', ');
+  const qtyList = items.map((it) => Number(it.quantity || 0)).join(', ');
+  const unitPriceList = items
+    .map((it) => Number(it.price || 0).toFixed(2))
+    .join(', ');
+  const suppliers = Array.from(
+    new Set(items.map((it) => it.supplier || '').filter(Boolean))
+  ).join(', ');
+  return {
+    id: o.id,
+    date: o.orderDate,
+    suppliers,
+    itemsList,
+    qtyList,
+    unitPriceList,
+    total: Number(total.toFixed(2)),
+    items,
+  };
+};
 
 function Purchases({ refreshFlag }) {
   const role = localStorage.getItem('role') || 'employee';
@@ -19,7 +45,6 @@ function Purchases({ refreshFlag }) {
   const [frequentItems, setFrequentItems] = useState([]);
   const [lastPrices, setLastPrices] = useState({});
   const [sortLow, setSortLow] = useState({ key: '', direction: 'asc' });
-  const [sortOrders, setSortOrders] = useState({ key: '', direction: 'asc' });
   const [searchTerm, setSearchTerm] = useState('');
   const [status, setStatus] = useState(null); // {type:'error'|'info', message:''}
 
@@ -145,92 +170,35 @@ function Purchases({ refreshFlag }) {
     return data;
   }, [lowStock, sortLow, isAdmin]);
 
-  const draftOrders = useMemo(() => orders.filter((o) => o.status === 'draft'), [orders]);
-  const finalOrders = useMemo(() => orders.filter((o) => o.status === 'final'), [orders]);
-
-  const computeTotalPrice = (order) => {
-    if (order.items) {
-      return order.items.reduce((sum, it) => {
-        const qty = Number(it.quantity) || 0;
-        const price = Number(it.price) || 0;
-        return sum + qty * price;
-      }, 0);
-    }
-    const qty = Number(order.quantity) || 0;
-    const price = Number(order.price) || 0;
-    return qty * price;
-  };
-
-  const filteredOrders = React.useMemo(() => {
-    if (!isAdmin) return [];
-    if (!searchTerm.trim()) return finalOrders;
+  const draftOrders = useMemo(
+    () => orders.filter((o) => o.status === 'draft'),
+    [orders]
+  );
+  const finalOrders = useMemo(
+    () => orders.filter((o) => o.status === 'final'),
+    [orders]
+  );
+  const finalSummaries = useMemo(
+    () => finalOrders.map(orderSummary),
+    [finalOrders]
+  );
+  const filteredSummaries = useMemo(() => {
+    if (!searchTerm.trim()) return finalSummaries;
     const term = searchTerm.toLowerCase();
-    return finalOrders.filter((o) => {
-      const itemNames = o.items
-        ? o.items.map((i) => i.itemName).join(', ')
-        : o.itemName || '';
-      const suppliers = o.items
-        ? o.items.map((i) => i.supplier).join(', ')
-        : o.supplier || '';
-      const total = computeTotalPrice(o).toFixed(2);
+    return finalSummaries.filter((o) => {
       return (
-        String(o.id).includes(term) ||
-        itemNames.toLowerCase().includes(term) ||
-        suppliers.toLowerCase().includes(term) ||
-        (o.orderDate && o.orderDate.toLowerCase().includes(term)) ||
-        (`$${total}`).includes(term)
+        o.id.toLowerCase().includes(term) ||
+        (o.suppliers && o.suppliers.toLowerCase().includes(term)) ||
+        o.itemsList.toLowerCase().includes(term) ||
+        o.qtyList.toLowerCase().includes(term) ||
+        formatDate(o.date).toLowerCase().includes(term) ||
+        money(o.total).toLowerCase().includes(term)
       );
     });
-  }, [finalOrders, searchTerm, isAdmin]);
-
-  const sortedOrders = React.useMemo(() => {
-    if (!isAdmin) return [];
-    const data = [...filteredOrders];
-    const getVal = (o, key) => {
-      if (key === 'itemName') {
-        return o.items ? o.items.map((i) => i.itemName).join(', ') : o.itemName;
-      }
-      if (key === 'quantity') {
-        return o.items
-          ? o.items.reduce((sum, i) => sum + Number(i.quantity || 0), 0)
-          : Number(o.quantity);
-      }
-      if (key === 'supplier') {
-        return o.items ? o.items.map((i) => i.supplier).join(', ') : o.supplier;
-      }
-      if (key === 'totalPrice') {
-        return computeTotalPrice(o);
-      }
-      return o[key];
-    };
-    if (sortOrders.key) {
-      data.sort((a, b) => {
-        const aVal = getVal(a, sortOrders.key);
-        const bVal = getVal(b, sortOrders.key);
-        if (aVal == null) return 1;
-        if (bVal == null) return -1;
-        if (typeof aVal === 'number' && typeof bVal === 'number') {
-          return sortOrders.direction === 'asc' ? aVal - bVal : bVal - aVal;
-        }
-        return sortOrders.direction === 'asc'
-          ? String(aVal).localeCompare(String(bVal))
-          : String(bVal).localeCompare(String(aVal));
-      });
-    }
-    return data;
-  }, [filteredOrders, sortOrders, isAdmin]);
+  }, [finalSummaries, searchTerm]);
 
   const handleLowSort = (key) => {
     setSortLow((prev) => {
-      if (prev.key === key) {
-        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
-      }
-      return { key, direction: 'asc' };
-    });
-  };
-
-  const handleOrderSort = (key) => {
-    setSortOrders((prev) => {
       if (prev.key === key) {
         return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
       }
@@ -560,68 +528,25 @@ function Purchases({ refreshFlag }) {
         <table>
           <thead>
             <tr>
-              <th onClick={() => handleOrderSort('id')}>
-                ID
-                {sortOrders.key === 'id' && (
-                  <span className="sort-indicator">
-                    {sortOrders.direction === 'asc' ? '▲' : '▼'}
-                  </span>
-                )}
-              </th>
-              <th onClick={() => handleOrderSort('itemName')}>
-                Item Name
-                {sortOrders.key === 'itemName' && (
-                  <span className="sort-indicator">
-                    {sortOrders.direction === 'asc' ? '▲' : '▼'}
-                  </span>
-                )}
-              </th>
-              <th onClick={() => handleOrderSort('quantity')}>
-                Quantity
-                {sortOrders.key === 'quantity' && (
-                  <span className="sort-indicator">
-                    {sortOrders.direction === 'asc' ? '▲' : '▼'}
-                  </span>
-                )}
-              </th>
-              {/* Removed the sortable Supplier column; a static Supplier column is added below */}
-              <th onClick={() => handleOrderSort('orderDate')}>
-                Date
-                {sortOrders.key === 'orderDate' && (
-                  <span className="sort-indicator">
-                    {sortOrders.direction === 'asc' ? '▲' : '▼'}
-                  </span>
-                )}
-              </th>
-              {/* Additional columns: Unit and Product Number, plus keep Supplier */}
-              <th>Unit</th>
-              <th>Supplier</th>
-              <th>Product Number</th>
-              <th onClick={() => handleOrderSort('totalPrice')}>
-                Total Price
-                {sortOrders.key === 'totalPrice' && (
-                  <span className="sort-indicator">
-                    {sortOrders.direction === 'asc' ? '▲' : '▼'}
-                  </span>
-                )}
-              </th>
+              <th className="mono">ID</th>
+              <th>Date</th>
+              <th>Supplier(s)</th>
+              <th>Items</th>
+              <th>Quantity</th>
+              <th>Total Price</th>
             </tr>
           </thead>
           <tbody>
-            {sortedOrders.map((order) =>
-              (order.items || []).map((it, idx) => (
-                <tr key={`${order.id}-${idx}`}>
-                  <td className="mono">{order.id.slice(0, 8)}…</td>
-                  <td>{it.itemName || ''}</td>
-                  <td>{Number(it.quantity || 0)}</td>
-                  <td>{formatDate(order.orderDate)}</td>
-                  <td>{it.unit || ''}</td>
-                  <td>{it.supplier || ''}</td>
-                  <td>{it.product_number || ''}</td>
-                  <td>{`$${(Number(it.quantity || 0) * Number(it.price || 0)).toFixed(2)}`}</td>
-                </tr>
-              ))
-            )}
+            {filteredSummaries.map((r) => (
+              <tr key={r.id}>
+                <td className="mono">{r.id.slice(0, 8)}…</td>
+                <td>{formatDate(r.date)}</td>
+                <td>{r.suppliers}</td>
+                <td>{r.itemsList}</td>
+                <td>{r.qtyList}</td>
+                <td>{money(r.total)}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       )}
