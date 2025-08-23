@@ -3,7 +3,7 @@ import './App.css';
 import './Reports.css';
 import { apiFetch } from './api';
 import * as XLSX from 'xlsx';
-import { formatDate } from './utils/format';
+import { formatDate, money } from './utils/format';
 
 const orderSummary = (o) => {
   const items = o.items || [];
@@ -37,12 +37,9 @@ function Reports() {
   const [endDate, setEndDate] = useState('');
   const [items, setItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState('');
-  const [itemData, setItemData] = useState([]);
   const [sortItems, setSortItems] = useState({ key: '', direction: 'asc' });
   const [selected, setSelected] = useState(new Set());
-
-  const formatCurrency = (val) =>
-    typeof val === 'number' ? `$${val.toFixed(2)}` : `$${Number(val || 0).toFixed(2)}`;
+  const [selectedItemLineIds, setSelectedItemLineIds] = useState(new Set());
 
   const fetchOrders = async () => {
     const url = `/api/reports/purchase-orders?startDate=${startDate}&endDate=${endDate}`;
@@ -72,21 +69,13 @@ function Reports() {
     fetchOrders();
   }, [startDate, endDate]);
 
+  const selectedItemName = useMemo(() => {
+    return items.find((x) => x.id.toString() === selectedItem)?.name || '';
+  }, [selectedItem, items]);
+
   useEffect(() => {
-    if (!selectedItem) {
-      setItemData([]);
-      return;
-    }
-    const itemName = items.find((x) => x.id.toString() === selectedItem)?.name;
-    if (!itemName) {
-      setItemData([]);
-      return;
-    }
-    const data = orders.filter((o) =>
-      (o.items || []).some((i) => i.itemName === itemName) || o.itemName === itemName
-    );
-    setItemData(data);
-  }, [selectedItem, orders, items]);
+    setSelectedItemLineIds(new Set());
+  }, [selectedItemName]);
 
   const rows = useMemo(() => (orders || []).map(orderSummary), [orders]);
   const filtered = useMemo(() => {
@@ -103,24 +92,42 @@ function Reports() {
     ? filtered.filter((r) => selected.has(r.id))
     : filtered;
 
-  const sortedItemData = React.useMemo(() => {
-    const data = [...itemData];
+  const itemRows = useMemo(() => {
+    if (!selectedItemName) return [];
+    const rows = [];
+    (orders || []).forEach((o) => {
+      (o.items || []).forEach((it, idx) => {
+        if ((it.itemName || '') === selectedItemName) {
+          rows.push({
+            id: `${o.id}::${idx}`,
+            orderId: o.id,
+            date: o.orderDate,
+            supplier: it.supplier || '',
+            unit: it.unit || '',
+            productNumber: it.product_number || '',
+            unitPrice: Number(it.price || 0),
+            quantity: Number(it.quantity || 0),
+            totalPrice: Number(it.quantity || 0) * Number(it.price || 0),
+            itemName: it.itemName || '',
+          });
+        }
+      });
+    });
+    return rows.filter((r) => {
+      const t = new Date(r.date).getTime();
+      return (
+        (!startDate || t >= new Date(startDate).getTime()) &&
+        (!endDate || t <= new Date(endDate).getTime())
+      );
+    });
+  }, [orders, selectedItemName, startDate, endDate]);
+
+  const sortedItemRows = useMemo(() => {
+    const data = [...itemRows];
     if (sortItems.key) {
       data.sort((a, b) => {
-        const getVal = (row) => {
-          if (sortItems.key === 'unit') {
-            const q = row.items
-              ? (row.items.find((i) => i.itemName === items.find((x) => x.id.toString() === selectedItem)?.name) || {}).quantity
-              : row.quantity;
-            const p = row.items
-              ? (row.items.find((i) => i.itemName === items.find((x) => x.id.toString() === selectedItem)?.name) || {}).price
-              : row.price;
-            return q ? p / q : 0;
-          }
-          return row[sortItems.key];
-        };
-        const aVal = getVal(a);
-        const bVal = getVal(b);
+        const aVal = a[sortItems.key];
+        const bVal = b[sortItems.key];
         if (aVal == null) return 1;
         if (bVal == null) return -1;
         if (typeof aVal === 'number' && typeof bVal === 'number') {
@@ -132,7 +139,7 @@ function Reports() {
       });
     }
     return data;
-  }, [itemData, sortItems]);
+  }, [itemRows, sortItems]);
 
   const handleItemSort = (key) => {
     setSortItems((prev) => {
@@ -178,6 +185,27 @@ function Reports() {
     const ws2 = XLSX.utils.json_to_sheet(detailRows);
     XLSX.utils.book_append_sheet(wb, ws1, 'Summary');
     XLSX.utils.book_append_sheet(wb, ws2, 'Items Detail');
+
+    const itemRowsToExport = selectedItemLineIds.size
+      ? itemRows.filter((r) => selectedItemLineIds.has(r.id))
+      : itemRows;
+
+    if (itemRowsToExport.length) {
+      const itemSheet = itemRowsToExport.map((r) => ({
+        'Order ID': r.orderId,
+        Date: formatDate(r.date),
+        Item: r.itemName,
+        Supplier: r.supplier,
+        Unit: r.unit,
+        'Product Number': r.productNumber,
+        'Unit Price': Number(r.unitPrice.toFixed(2)),
+        Quantity: Number(r.quantity),
+        'Total Price': Number(r.totalPrice.toFixed(2)),
+      }));
+      const ws3 = XLSX.utils.json_to_sheet(itemSheet);
+      XLSX.utils.book_append_sheet(wb, ws3, 'Selected Item Report');
+    }
+
     XLSX.writeFile(wb, 'purchase_orders.xlsx');
   };
 
@@ -233,7 +261,7 @@ function Reports() {
               <td>{r.suppliers}</td>
               <td>{r.itemsList}</td>
               <td>{r.qtyList}</td>
-              <td>{formatCurrency(r.total)}</td>
+              <td>{money(r.total)}</td>
             </tr>
           ))}
         </tbody>
@@ -247,13 +275,29 @@ function Reports() {
           ))}
         </select>
       </div>
-      {itemData.length > 0 && (
+      {itemRows.length > 0 && (
         <table>
           <thead>
             <tr>
-              <th onClick={() => handleItemSort('orderDate')}>
+              <th>
+                <input
+                  type="checkbox"
+                  checked={
+                    itemRows.length > 0 &&
+                    selectedItemLineIds.size === itemRows.length
+                  }
+                  onChange={() => {
+                    if (selectedItemLineIds.size === itemRows.length) {
+                      setSelectedItemLineIds(new Set());
+                    } else {
+                      setSelectedItemLineIds(new Set(itemRows.map((r) => r.id)));
+                    }
+                  }}
+                />
+              </th>
+              <th onClick={() => handleItemSort('date')}>
                 Date
-                {sortItems.key === 'orderDate' && (
+                {sortItems.key === 'date' && (
                   <span className="sort-indicator">
                     {sortItems.direction === 'asc' ? '▲' : '▼'}
                   </span>
@@ -267,17 +311,17 @@ function Reports() {
                   </span>
                 )}
               </th>
-              <th onClick={() => handleItemSort('unit')}>
+              <th onClick={() => handleItemSort('unitPrice')}>
                 Unit Price
-                {sortItems.key === 'unit' && (
+                {sortItems.key === 'unitPrice' && (
                   <span className="sort-indicator">
                     {sortItems.direction === 'asc' ? '▲' : '▼'}
                   </span>
                 )}
               </th>
-              <th onClick={() => handleItemSort('price')}>
+              <th onClick={() => handleItemSort('totalPrice')}>
                 Total Price
-                {sortItems.key === 'price' && (
+                {sortItems.key === 'totalPrice' && (
                   <span className="sort-indicator">
                     {sortItems.direction === 'asc' ? '▲' : '▼'}
                   </span>
@@ -294,27 +338,28 @@ function Reports() {
             </tr>
           </thead>
           <tbody>
-            {sortedItemData.map((r, idx) => {
-              let price = r.price;
-              let qty = r.quantity;
-              let supplier = r.supplier;
-              if (r.items) {
-                const it = r.items.find((i) => i.itemName === items.find((x) => x.id.toString() === selectedItem)?.name) || {};
-                price = it.price;
-                qty = it.quantity;
-                supplier = it.supplier;
-              }
-              const unit = qty ? price / qty : 0;
-              return (
-                <tr key={idx}>
-                  <td>{r.orderDate}</td>
-                  <td>{supplier}</td>
-                  <td>{formatCurrency(unit)}</td>
-                  <td>{formatCurrency(price)}</td>
-                  <td>{qty}</td>
-                </tr>
-              );
-            })}
+            {sortedItemRows.map((r) => (
+              <tr key={r.id}>
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={selectedItemLineIds.has(r.id)}
+                    onChange={() => {
+                      setSelectedItemLineIds((prev) => {
+                        const next = new Set(prev);
+                        next.has(r.id) ? next.delete(r.id) : next.add(r.id);
+                        return next;
+                      });
+                    }}
+                  />
+                </td>
+                <td>{formatDate(r.date)}</td>
+                <td>{r.supplier}</td>
+                <td>{money(r.unitPrice)}</td>
+                <td>{money(r.totalPrice)}</td>
+                <td>{r.quantity}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       )}
