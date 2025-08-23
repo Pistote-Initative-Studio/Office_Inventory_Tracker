@@ -114,6 +114,15 @@
 .trends-empty p {
   margin: 0;
 }
-.trends-selector { display: flex; gap: 12px; align-items: center; }
-.trend-select { min-width: 260px; }
-.compare-toggle { margin-left: 8px; user-select: none; }
+.trends-selector { display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap; }
+.selector-label { margin-right:6px; margin-top:6px; }
+.trend-select { min-width:220px; }
+
+.checkbox-list { display:flex; flex-direction:column; gap:6px; }
+.checkbox-list-actions { display:flex; gap:8px; }
+.checkbox-scroll {
+  border:1px solid #d6d6d6; border-radius:6px; padding:6px;
+  max-height:140px; overflow:auto; min-width:220px; background:#fff;
+}
+.checkbox-row { display:flex; align-items:center; gap:8px; padding:4px 2px; }
+.compare-toggle { margin-left:8px; user-select:none; }

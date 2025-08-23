@@ -10,6 +10,13 @@ function Trends({ mode = 'Quantity', onModeChange }) {
   const [metric, setMetric] = useState(mode === 'Price' ? 'price' : 'quantity');
   const [range, setRange] = useState('monthly');
 
+  const toggleItem = (name) =>
+    setSelectedItems((prev) =>
+      prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name]
+    );
+  const selectAll = () => setSelectedItems(availableItems);
+  const clearAll = () => setSelectedItems([]);
+
   useEffect(() => {
     setMetric(mode === 'Price' ? 'price' : 'quantity');
   }, [mode]);
@@ -41,6 +48,12 @@ function Trends({ mode = 'Quantity', onModeChange }) {
       }
     })();
   }, []);
+
+  useEffect(() => {
+    if (!compare && selectedItems.length > 1) {
+      setSelectedItems([selectedItems[0]]);
+    }
+  }, [compare, selectedItems]);
 
   const keyByRange = (d) => {
     const dt = new Date(d);
@@ -113,41 +126,62 @@ function Trends({ mode = 'Quantity', onModeChange }) {
       <div className="trends-layout">
         <div className="trends-left">
           <div className="trends-selector">
-            <label htmlFor="trend-item">Select item</label>
-            <select
-              id="trend-item"
-              className="trend-select"
-              disabled={!availableItems.length}
-              multiple={compare}
-              value={compare ? selectedItems : selectedItems[0] || ''}
-              onChange={(e) => {
-                if (compare) {
-                  const vals = Array.from(e.target.selectedOptions).map((o) => o.value);
-                  setSelectedItems(vals);
-                } else {
-                  setSelectedItems(e.target.value ? [e.target.value] : []);
+            <label className="selector-label">Select item</label>
+
+            {!compare ? (
+              <select
+                className="trend-select"
+                value={selectedItems[0] || ''}
+                onChange={(e) =>
+                  setSelectedItems(e.target.value ? [e.target.value] : [])
                 }
-              }}
-            >
-              {!compare && <option value="">— Select an item —</option>}
-              {availableItems.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
+                disabled={!availableItems.length}
+              >
+                <option value="">— Select an item —</option>
+                {availableItems.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="checkbox-list">
+                <div className="checkbox-list-actions">
+                  <button
+                    type="button"
+                    onClick={selectAll}
+                    disabled={!availableItems.length}
+                  >
+                    Select All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearAll}
+                    disabled={!selectedItems.length}
+                  >
+                    Clear
+                  </button>
+                </div>
+                <div className="checkbox-scroll">
+                  {availableItems.map((n) => (
+                    <label key={n} className="checkbox-row">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.includes(n)}
+                        onChange={() => toggleItem(n)}
+                      />
+                      <span>{n}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <label className="compare-toggle">
               <input
                 type="checkbox"
                 checked={compare}
-                onChange={(e) => {
-                  const on = e.target.checked;
-                  setCompare(on);
-                  if (!on && selectedItems.length > 1) {
-                    setSelectedItems([selectedItems[0]]);
-                  }
-                }}
+                onChange={(e) => setCompare(e.target.checked)}
               />
               Compare items
             </label>
