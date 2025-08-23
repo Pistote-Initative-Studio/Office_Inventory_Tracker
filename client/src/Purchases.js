@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import './Purchases.css';
 import { apiFetch } from './api';
 import { formatDate } from './utils/format';
@@ -10,13 +10,12 @@ function Purchases({ refreshFlag }) {
   const [loading, setLoading] = useState(false);
   const [lowStock, setLowStock] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [editId, setEditId] = useState(null);
+  const [editingDraftId, setEditingDraftId] = useState(null);
   const [draftMessage, setDraftMessage] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
   const [autoItems, setAutoItems] = useState([]);
   const [customItems, setCustomItems] = useState([]);
   const [notes, setNotes] = useState('');
-  const [drafts, setDrafts] = useState([]);
   const [frequentItems, setFrequentItems] = useState([]);
   const [lastPrices, setLastPrices] = useState({});
   const [sortLow, setSortLow] = useState({ key: '', direction: 'asc' });
@@ -67,17 +66,6 @@ function Purchases({ refreshFlag }) {
     }
   };
 
-  const fetchDrafts = async () => {
-    try {
-      const res = await apiFetch('/api/purchase-orders?status=draft');
-      if (!res.ok) throw new Error('Failed to fetch drafts');
-      const data = await res.json();
-      setDrafts(data.data || []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   const fetchFrequentItems = async () => {
     try {
       const res = await apiFetch('/api/purchase-orders/frequent');
@@ -93,7 +81,6 @@ function Purchases({ refreshFlag }) {
     if (!isAdmin) return;
     fetchOrders();
     fetchLowStock();
-    fetchDrafts();
     fetchFrequentItems();
   }, [refreshFlag, isAdmin]);
 
@@ -118,12 +105,12 @@ function Purchases({ refreshFlag }) {
   }, [selectedIds, lowStock, isAdmin]);
 
   useEffect(() => {
-    if (!isAdmin || !showModal || editId == null) return;
+    if (!isAdmin || !showModal || editingDraftId == null) return;
     const interval = setInterval(() => {
       saveDraft(true);
     }, 60000);
     return () => clearInterval(interval);
-  }, [showModal, editId, autoItems, customItems, notes, isAdmin]);
+  }, [showModal, editingDraftId, autoItems, customItems, notes, isAdmin]);
 
   useEffect(() => {
     if (status) {
@@ -158,6 +145,9 @@ function Purchases({ refreshFlag }) {
     return data;
   }, [lowStock, sortLow, isAdmin]);
 
+  const draftOrders = useMemo(() => orders.filter((o) => o.status === 'draft'), [orders]);
+  const finalOrders = useMemo(() => orders.filter((o) => o.status === 'final'), [orders]);
+
   const computeTotalPrice = (order) => {
     if (order.items) {
       return order.items.reduce((sum, it) => {
@@ -173,9 +163,9 @@ function Purchases({ refreshFlag }) {
 
   const filteredOrders = React.useMemo(() => {
     if (!isAdmin) return [];
-    if (!searchTerm.trim()) return orders;
+    if (!searchTerm.trim()) return finalOrders;
     const term = searchTerm.toLowerCase();
-    return orders.filter((o) => {
+    return finalOrders.filter((o) => {
       const itemNames = o.items
         ? o.items.map((i) => i.itemName).join(', ')
         : o.itemName || '';
@@ -191,7 +181,7 @@ function Purchases({ refreshFlag }) {
         (`$${total}`).includes(term)
       );
     });
-  }, [orders, searchTerm, isAdmin]);
+  }, [finalOrders, searchTerm, isAdmin]);
 
   const sortedOrders = React.useMemo(() => {
     if (!isAdmin) return [];
@@ -284,23 +274,37 @@ function Purchases({ refreshFlag }) {
 
   const saveDraft = async (auto = false) => {
     const items = combinedItems();
+    const payload = {
+      items,
+      notes,
+      status: 'draft',
+      orderDate: new Date().toISOString(),
+    };
     try {
-      if (editId) {
-        await apiFetch(`/api/purchase-orders/${editId}`, {
+      if (editingDraftId) {
+        await apiFetch(`/api/purchase-orders/${editingDraftId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items, notes, status: 'draft' }),
+          body: JSON.stringify(payload),
         });
       } else {
         const res = await apiFetch('/api/purchase-orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items, notes, status: 'draft' }),
+          body: JSON.stringify(payload),
         });
         const data = await res.json();
-        setEditId(data.id);
+        setEditingDraftId(data.id);
       }
-      if (!auto) fetchDrafts();
+      if (!auto) {
+        await fetchOrders();
+        setShowModal(false);
+        setSelectedIds([]);
+        setAutoItems([]);
+        setCustomItems([]);
+        setNotes('');
+        setEditingDraftId(null);
+      }
       setDraftMessage('Draft Saved');
       setTimeout(() => setDraftMessage(''), 3000);
     } catch (err) {
@@ -310,22 +314,27 @@ function Purchases({ refreshFlag }) {
 
   const submitOrder = async () => {
     const items = combinedItems();
+    const payload = {
+      items,
+      notes,
+      status: 'final',
+      orderDate: new Date().toISOString(),
+    };
     try {
-      if (editId) {
-        await apiFetch(`/api/purchase-orders/${editId}`, {
+      if (editingDraftId) {
+        await apiFetch(`/api/purchase-orders/${editingDraftId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items, notes, status: 'final' }),
+          body: JSON.stringify(payload),
         });
       } else {
         await apiFetch('/api/purchase-orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items, notes, status: 'final' }),
+          body: JSON.stringify(payload),
         });
       }
       fetchOrders();
-      fetchDrafts();
       setStatus({ type: 'info', message: 'Order submitted.' });
     } catch (err) {
       console.error(err);
@@ -336,7 +345,7 @@ function Purchases({ refreshFlag }) {
       setAutoItems([]);
       setCustomItems([]);
       setNotes('');
-      setEditId(null);
+      setEditingDraftId(null);
     }
   };
 
@@ -356,7 +365,18 @@ function Purchases({ refreshFlag }) {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <button onClick={() => setShowModal(true)}>Create Purchase Order</button>
+        <button
+          onClick={() => {
+            setEditingDraftId(null);
+            setCustomItems([]);
+            setAutoItems([]);
+            setNotes('');
+            setSelectedIds([]);
+            setShowModal(true);
+          }}
+        >
+          Create Purchase Order
+        </button>
       </div>
       {status && (
         <div className={`status-banner ${status.type}`}>{status.message}</div>
@@ -396,7 +416,7 @@ function Purchases({ refreshFlag }) {
                         ]);
                         setAutoItems([]);
                         setSelectedIds([]);
-                        setEditId(null);
+                        setEditingDraftId(null);
                         setShowModal(true);
                       }}
                     >
@@ -475,7 +495,7 @@ function Purchases({ refreshFlag }) {
       </div>
       <div className="section-box">
         <h3>Draft Purchase Orders</h3>
-        {drafts.length === 0 ? (
+        {draftOrders.length === 0 ? (
           <p>No drafts available.</p>
         ) : (
           <table>
@@ -493,7 +513,7 @@ function Purchases({ refreshFlag }) {
               </tr>
             </thead>
             <tbody>
-              {drafts.map((order) =>
+              {draftOrders.map((order) =>
                 (order.items || []).map((it, idx) => (
                   <tr key={`${order.id}-${idx}`}>
                     <td className="mono">{order.id.slice(0, 8)}…</td>
@@ -511,7 +531,7 @@ function Purchases({ refreshFlag }) {
                           setAutoItems([]);
                           setNotes(order.notes || '');
                           setSelectedIds([]);
-                          setEditId(order.id);
+                          setEditingDraftId(order.id);
                           setShowModal(true);
                         }}
                       >
@@ -520,7 +540,7 @@ function Purchases({ refreshFlag }) {
                       <button
                         onClick={async () => {
                           await apiFetch(`/api/purchase-orders/${order.id}`, { method: 'DELETE' });
-                          fetchDrafts();
+                          fetchOrders();
                         }}
                       >
                         Delete
@@ -743,7 +763,13 @@ function Purchases({ refreshFlag }) {
               </div>
               <button type="button" onClick={() => saveDraft(false)}>Save Draft</button>
               <button type="submit">Submit Order</button>
-              <button type="button" onClick={() => setShowModal(false)}>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowModal(false);
+                  setEditingDraftId(null);
+                }}
+              >
                 Cancel
               </button>
               {draftMessage && <div className="draft-msg">{draftMessage}</div>}

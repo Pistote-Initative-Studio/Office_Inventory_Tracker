@@ -89,7 +89,7 @@ export const PurchaseOrders = {
       id: uuid(),
       orderDate: data.orderDate || now,
       notes: data.notes || '',
-      status: data.status || 'final',
+      status: data.status === 'draft' ? 'draft' : 'final',
       items,
       last_modified: now,
     };
@@ -105,14 +105,15 @@ export const PurchaseOrders = {
       : patch.orderItems
         ? patch.orderItems.map(normalizePOItem)
         : cur.items;
-    const rec = {
+    const next = {
       ...cur,
       ...patch,
       items,
+      status: patch.status === 'draft' ? 'draft' : patch.status === 'final' ? 'final' : cur.status,
       last_modified: new Date().toISOString(),
     };
-    await db.put('purchaseOrders', rec);
-    return rec;
+    await db.put('purchaseOrders', next);
+    return next;
   },
   async remove(id) { await (await getDB()).delete('purchaseOrders', id); }
 };
