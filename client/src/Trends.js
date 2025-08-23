@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './Trends.css';
 import { apiFetch } from './api';
+import { money } from './utils/format';
 
 function Trends({ mode = 'Quantity', onModeChange }) {
   const [orders, setOrders] = useState([]);
@@ -97,26 +98,44 @@ function Trends({ mode = 'Quantity', onModeChange }) {
     return max;
   }, [series, selectedItems]);
 
+  const yMax = useMemo(() => {
+    const max = maxValue || 0;
+    if (max === 0) return 1;
+    const exp = Math.floor(Math.log10(max));
+    const frac = max / Math.pow(10, exp);
+    let niceFrac;
+    if (frac <= 1) niceFrac = 1;
+    else if (frac <= 2) niceFrac = 2;
+    else if (frac <= 5) niceFrac = 5;
+    else niceFrac = 10;
+    return niceFrac * Math.pow(10, exp);
+  }, [maxValue]);
+
+  const yTicks = useMemo(() => {
+    const step = yMax / 4;
+    return Array.from({ length: 5 }, (_, i) => step * i);
+  }, [yMax]);
+
   const colors = ['#3a82ff', '#58c13b', '#ff5722', '#6f42c1'];
 
   const seriesData = useMemo(() => {
     const width = 600;
     const height = 160;
-    const safeMax = maxValue || 1;
+    const safeMax = yMax || 1;
     const divisor = Math.max(periods.length - 1, 1);
     return selectedItems.map((name, idx) => {
       const pts = periods.map((_, i) => {
         const val = series[i]?.[name] || 0;
         const x = (width / divisor) * i;
-        const y = height - (val / safeMax) * (height - 20) + 10;
-        return [x, y];
+        const y = height - (val / safeMax) * height;
+        return { x, y, val };
       });
       const path = pts
-        .map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0]},${p[1]}`)
+        .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`)
         .join(' ');
       return { id: name, color: colors[idx % colors.length], pts, path };
     });
-  }, [series, selectedItems, periods, maxValue]);
+  }, [series, selectedItems, periods, yMax]);
 
   return (
     <div className="trends-container">
@@ -227,18 +246,33 @@ function Trends({ mode = 'Quantity', onModeChange }) {
                 </div>
               ) : (
                 <>
-                  <svg viewBox="0 0 600 200" width="100%" height="200">
-                    {[1, 2, 3, 4].map((i) => (
-                      <line
-                        key={i}
-                        x1="0"
-                        y1={i * 40}
-                        x2="600"
-                        y2={i * 40}
-                        stroke="#ccc"
-                        strokeDasharray="5 5"
-                      />
-                    ))}
+                  <svg viewBox="-50 0 650 200" width="100%" height="200">
+                    {yTicks.map((t, idx) => {
+                      const y = 160 - (t / yMax) * 160;
+                      return (
+                        <g key={idx}>
+                          {idx > 0 && (
+                            <line
+                              x1="0"
+                              y1={y}
+                              x2="600"
+                              y2={y}
+                              stroke="#ccc"
+                              strokeDasharray="5 5"
+                            />
+                          )}
+                          <text
+                            x="-8"
+                            y={y}
+                            textAnchor="end"
+                            dominantBaseline="middle"
+                            className="y-axis-tick"
+                          >
+                            {metric === 'price' ? money(t) : Math.round(t)}
+                          </text>
+                        </g>
+                      );
+                    })}
                     {[1, 2, 3, 4, 5].map((i) => (
                       <line
                         key={`v${i}`}
@@ -252,6 +286,15 @@ function Trends({ mode = 'Quantity', onModeChange }) {
                     ))}
                     <line x1="0" y1="0" x2="0" y2="160" stroke="#666" />
                     <line x1="0" y1="160" x2="600" y2="160" stroke="#666" />
+                    <text
+                      x="-40"
+                      y={80}
+                      textAnchor="middle"
+                      transform="rotate(-90 -40 80)"
+                      className="y-axis-label"
+                    >
+                      {metric === 'price' ? 'Price ($)' : 'Quantity'}
+                    </text>
                     {seriesData.map((s) => (
                       <g key={s.id}>
                         <path
@@ -261,7 +304,11 @@ function Trends({ mode = 'Quantity', onModeChange }) {
                           strokeWidth="3"
                         />
                         {s.pts.map((p, i) => (
-                          <circle key={i} cx={p[0]} cy={p[1]} r="3" fill={s.color} />
+                          <circle key={i} cx={p.x} cy={p.y} r="3" fill={s.color}>
+                            <title>
+                              {metric === 'price' ? money(p.val) : Math.round(p.val)}
+                            </title>
+                          </circle>
                         ))}
                       </g>
                     ))}
