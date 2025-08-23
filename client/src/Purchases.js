@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import './Purchases.css';
 import { apiFetch } from './api';
+import { formatDate } from './utils/format';
 
 function Purchases({ refreshFlag }) {
   const role = localStorage.getItem('role') || 'employee';
@@ -270,7 +271,16 @@ function Purchases({ refreshFlag }) {
   };
 
   const combinedItems = () =>
-    [...autoItems, ...customItems].filter((it) => it.itemName && it.quantity);
+    [...autoItems, ...customItems]
+      .filter((it) => it.itemName && it.quantity)
+      .map((it) => ({
+        itemName: String(it.itemName).trim(),
+        quantity: Number(it.quantity || 0),
+        unit: String(it.unit || '').trim(),
+        supplier: String(it.supplier || '').trim(),
+        product_number: String(it.product_number || '').trim(),
+        price: Number(it.price || 0),
+      }));
 
   const saveDraft = async (auto = false) => {
     const items = combinedItems();
@@ -472,43 +482,53 @@ function Purchases({ refreshFlag }) {
             <thead>
               <tr>
                 <th>Draft ID</th>
-                <th>Items</th>
-                <th>Last Modified</th>
+                <th>Item Name</th>
+                <th>Quantity</th>
+                <th>Date</th>
+                <th>Unit</th>
+                <th>Supplier</th>
+                <th>Product Number</th>
                 <th>Total Price</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {drafts.map((d) => (
-                <tr key={d.id}>
-                  <td>{d.id}</td>
-                  <td>{d.items ? d.items.map((i) => i.itemName).join(', ') : ''}</td>
-                  <td>{d.last_modified}</td>
-                  <td>{`$${computeTotalPrice(d).toFixed(2)}`}</td>
-                  <td>
-                    <button
-                      onClick={() => {
-                        setCustomItems(d.items || []);
-                        setAutoItems([]);
-                        setNotes(d.notes || '');
-                        setSelectedIds([]);
-                        setEditId(d.id);
-                        setShowModal(true);
-                      }}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={async () => {
-                        await apiFetch(`/api/purchase-orders/${d.id}`, { method: 'DELETE' });
-                        fetchDrafts();
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {drafts.map((order) =>
+                (order.items || []).map((it, idx) => (
+                  <tr key={`${order.id}-${idx}`}>
+                    <td className="mono">{order.id.slice(0, 8)}…</td>
+                    <td>{it.itemName || ''}</td>
+                    <td>{Number(it.quantity || 0)}</td>
+                    <td>{formatDate(order.orderDate)}</td>
+                    <td>{it.unit || ''}</td>
+                    <td>{it.supplier || ''}</td>
+                    <td>{it.product_number || ''}</td>
+                    <td>{`$${(Number(it.quantity || 0) * Number(it.price || 0)).toFixed(2)}`}</td>
+                    <td>
+                      <button
+                        onClick={() => {
+                          setCustomItems(order.items || []);
+                          setAutoItems([]);
+                          setNotes(order.notes || '');
+                          setSelectedIds([]);
+                          setEditId(order.id);
+                          setShowModal(true);
+                        }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={async () => {
+                          await apiFetch(`/api/purchase-orders/${order.id}`, { method: 'DELETE' });
+                          fetchDrafts();
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         )}
@@ -568,38 +588,20 @@ function Purchases({ refreshFlag }) {
             </tr>
           </thead>
           <tbody>
-            {sortedOrders.map((order) => (
-              <tr key={order.id}>
-                <td>{order.id}</td>
-                <td>
-                  {order.items
-                    ? order.items.map((i) => i.itemName).join(', ')
-                    : order.itemName}
-                </td>
-                <td>
-                  {order.items
-                    ? order.items.map((i) => i.quantity).join(', ')
-                    : order.quantity}
-                </td>
-                <td>
-                  {order.items
-                    ? order.items.map((i) => i.unit || '').join(', ')
-                    : ''}
-                </td>
-                <td>
-                  {order.items
-                    ? order.items.map((i) => i.supplier || '').join(', ')
-                    : order.supplier}
-                </td>
-                <td>
-                  {order.items
-                    ? order.items.map((i) => i.product_number || '').join(', ')
-                    : ''}
-                </td>
-                <td>{order.orderDate}</td>
-                <td>{`$${computeTotalPrice(order).toFixed(2)}`}</td>
-              </tr>
-            ))}
+            {sortedOrders.map((order) =>
+              (order.items || []).map((it, idx) => (
+                <tr key={`${order.id}-${idx}`}>
+                  <td className="mono">{order.id.slice(0, 8)}…</td>
+                  <td>{it.itemName || ''}</td>
+                  <td>{Number(it.quantity || 0)}</td>
+                  <td>{formatDate(order.orderDate)}</td>
+                  <td>{it.unit || ''}</td>
+                  <td>{it.supplier || ''}</td>
+                  <td>{it.product_number || ''}</td>
+                  <td>{`$${(Number(it.quantity || 0) * Number(it.price || 0)).toFixed(2)}`}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       )}
