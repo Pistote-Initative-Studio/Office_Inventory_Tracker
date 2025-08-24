@@ -9,8 +9,8 @@ afterEach(() => {
   localStorage.clear();
 });
 
-test('renders supply manager heading', () => {
+test('renders inventory manager heading', () => {
   render(<App />);
-  const heading = screen.getByText(/office supply manager/i);
+  const heading = screen.getByText(/inventory manager/i);
   expect(heading).toBeInTheDocument();
 });

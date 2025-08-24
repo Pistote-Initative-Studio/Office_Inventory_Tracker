@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import InventoryTable from './InventoryTable';
 import Purchases from './Purchases';
@@ -11,6 +11,10 @@ function App() {
   const [activeTab, setActiveTab] = useState('Inventory');
   const [trendsMode, setTrendsMode] = useState('Quantity');
 
+  useEffect(() => {
+    document.title = 'Inventory Manager';
+  }, []);
+
   const triggerInventoryChange = () => {
     setInventoryFlag((prev) => prev + 1);
   };
@@ -18,7 +22,7 @@ function App() {
   return (
     <div className="App app-root">
       <header className="app-header">
-        <h1 className="app-title">Office Supply Manager</h1>
+        <h1 className="app-title">Inventory Manager</h1>
       </header>
       <div className="tabs">
         <button
