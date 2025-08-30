@@ -49,7 +49,7 @@ function Purchases({ refreshFlag }) {
   const [status, setStatus] = useState(null); // {type:'error'|'info', message:''}
 
 
-  const fetchOrders = async () => {
+  const fetchOrders = React.useCallback(async () => {
     setLoading(true);
     try {
       const res = await apiFetch('/api/purchase-orders');
@@ -73,7 +73,7 @@ function Purchases({ refreshFlag }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const fetchLowStock = async () => {
     try {
