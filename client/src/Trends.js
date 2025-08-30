@@ -86,7 +86,7 @@ function Trends({ mode = 'Quantity', onModeChange }) {
     return Array.from(map.entries())
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([k, obj]) => ({ period: k, ...obj }));
-  }, [orders, selectedItems, range, metric, keyByRange]);
+  }, [orders, selectedItems, metric, keyByRange]);
 
   const periods = series.map((s) => s.period);
 

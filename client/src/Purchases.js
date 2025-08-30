@@ -129,6 +129,59 @@ function Purchases({ refreshFlag }) {
     setAutoItems(mapped);
   }, [selectedIds, lowStock, isAdmin]);
 
+
+  const combinedItems = React.useCallback(() =>
+    [...autoItems, ...customItems]
+      .filter((it) => it.itemName && it.quantity)
+      .map((it) => ({
+        itemName: String(it.itemName).trim(),
+        quantity: Number(it.quantity || 0),
+        unit: String(it.unit || '').trim(),
+        supplier: String(it.supplier || '').trim(),
+        product_number: String(it.product_number || '').trim(),
+        price: Number(it.price || 0),
+      })), [autoItems, customItems]);
+
+  const saveDraft = React.useCallback(async (auto = false) => {
+    const items = combinedItems();
+    const payload = {
+      items,
+      notes,
+      status: 'draft',
+      orderDate: new Date().toISOString(),
+    };
+    try {
+      if (editingDraftId) {
+        await apiFetch(`/api/purchase-orders/${editingDraftId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        const res = await apiFetch('/api/purchase-orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        setEditingDraftId(data.id);
+      }
+      if (!auto) {
+        await fetchOrders();
+        setShowModal(false);
+        setSelectedIds([]);
+        setAutoItems([]);
+        setCustomItems([]);
+        setNotes('');
+        setEditingDraftId(null);
+      }
+      setDraftMessage('Draft Saved');
+      setTimeout(() => setDraftMessage(''), 3000);
+    } catch (err) {
+      console.error(err);
+    }
+  }, [combinedItems, notes, editingDraftId, fetchOrders, setShowModal, setSelectedIds, setAutoItems, setCustomItems, setNotes, setEditingDraftId]);
+
   useEffect(() => {
     if (!isAdmin || !showModal || editingDraftId == null) return;
     const interval = setInterval(() => {
@@ -228,57 +281,7 @@ function Purchases({ refreshFlag }) {
     ]);
   };
 
-  const combinedItems = () =>
-    [...autoItems, ...customItems]
-      .filter((it) => it.itemName && it.quantity)
-      .map((it) => ({
-        itemName: String(it.itemName).trim(),
-        quantity: Number(it.quantity || 0),
-        unit: String(it.unit || '').trim(),
-        supplier: String(it.supplier || '').trim(),
-        product_number: String(it.product_number || '').trim(),
-        price: Number(it.price || 0),
-      }));
-
-  const saveDraft = async (auto = false) => {
-    const items = combinedItems();
-    const payload = {
-      items,
-      notes,
-      status: 'draft',
-      orderDate: new Date().toISOString(),
-    };
-    try {
-      if (editingDraftId) {
-        await apiFetch(`/api/purchase-orders/${editingDraftId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-      } else {
-        const res = await apiFetch('/api/purchase-orders', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json();
-        setEditingDraftId(data.id);
-      }
-      if (!auto) {
-        await fetchOrders();
-        setShowModal(false);
-        setSelectedIds([]);
-        setAutoItems([]);
-        setCustomItems([]);
-        setNotes('');
-        setEditingDraftId(null);
-      }
-      setDraftMessage('Draft Saved');
-      setTimeout(() => setDraftMessage(''), 3000);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  // ...existing code...
 
   const submitOrder = async () => {
     const items = combinedItems();
