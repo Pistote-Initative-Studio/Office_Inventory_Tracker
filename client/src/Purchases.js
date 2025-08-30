@@ -30,8 +30,6 @@ const orderSummary = (o) => {
 };
 
 function Purchases({ refreshFlag }) {
-  const role = localStorage.getItem('role') || 'employee';
-  const isAdmin = role === 'admin';
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [lowStock, setLowStock] = useState([]);
