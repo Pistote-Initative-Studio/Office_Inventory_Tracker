@@ -107,7 +107,7 @@ function Purchases({ refreshFlag }) {
     fetchOrders();
     fetchLowStock();
     fetchFrequentItems();
-  }, [refreshFlag, isAdmin]);
+  }, [refreshFlag, isAdmin, fetchOrders]);
 
   useEffect(() => {
     if (!isAdmin) return;
