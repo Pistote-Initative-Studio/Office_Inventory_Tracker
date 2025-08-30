@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import './Trends.css';
 import { apiFetch } from './api';
 import { money } from './utils/format';
@@ -56,15 +56,18 @@ function Trends({ mode = 'Quantity', onModeChange }) {
     }
   }, [compare, selectedItems]);
 
-  const keyByRange = (d) => {
-    const dt = new Date(d);
-    const y = dt.getFullYear();
-    const m = (dt.getMonth() + 1).toString().padStart(2, '0');
-    const q = Math.floor(dt.getMonth() / 3) + 1;
-    if (range === 'monthly') return `${y}-${m}`;
-    if (range === 'quarterly') return `${y}-Q${q}`;
-    return `${y}`;
-  };
+  const keyByRange = useCallback(
+    (d) => {
+      const dt = new Date(d);
+      const y = dt.getFullYear();
+      const m = (dt.getMonth() + 1).toString().padStart(2, '0');
+      const q = Math.floor(dt.getMonth() / 3) + 1;
+      if (range === 'monthly') return `${y}-${m}`;
+      if (range === 'quarterly') return `${y}-Q${q}`;
+      return `${y}`;
+    },
+    [range]
+  );
 
   const series = useMemo(() => {
     if (!selectedItems.length) return [];
@@ -83,7 +86,7 @@ function Trends({ mode = 'Quantity', onModeChange }) {
     return Array.from(map.entries())
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([k, obj]) => ({ period: k, ...obj }));
-  }, [orders, selectedItems, range, metric]);
+  }, [orders, selectedItems, range, metric, keyByRange]);
 
   const periods = series.map((s) => s.period);
 
@@ -116,7 +119,10 @@ function Trends({ mode = 'Quantity', onModeChange }) {
     return Array.from({ length: 5 }, (_, i) => step * i);
   }, [yMax]);
 
-  const colors = ['#3a82ff', '#58c13b', '#ff5722', '#6f42c1'];
+  const colors = useMemo(
+    () => ['#3a82ff', '#58c13b', '#ff5722', '#6f42c1'],
+    []
+  );
 
   const seriesData = useMemo(() => {
     const width = 600;
@@ -135,7 +141,7 @@ function Trends({ mode = 'Quantity', onModeChange }) {
         .join(' ');
       return { id: name, color: colors[idx % colors.length], pts, path };
     });
-  }, [series, selectedItems, periods, yMax]);
+  }, [series, selectedItems, periods, yMax, colors]);
 
   return (
     <div className="trends-container">

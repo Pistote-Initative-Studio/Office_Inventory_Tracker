@@ -135,7 +135,7 @@ function Purchases({ refreshFlag }) {
       saveDraft(true);
     }, 60000);
     return () => clearInterval(interval);
-  }, [showModal, editingDraftId, autoItems, customItems, notes, isAdmin]);
+  }, [showModal, editingDraftId, autoItems, customItems, notes, isAdmin, saveDraft]);
 
   useEffect(() => {
     if (status) {
@@ -168,7 +168,7 @@ function Purchases({ refreshFlag }) {
       });
     }
     return data;
-  }, [lowStock, sortLow, isAdmin]);
+  }, [lowStock, sortLow, isAdmin, lastPrices]);
 
   const draftOrders = useMemo(
     () => orders.filter((o) => o.status === 'draft'),

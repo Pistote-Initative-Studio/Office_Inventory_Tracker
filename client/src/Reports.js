@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import './App.css';
 import './Reports.css';
 import { apiFetch } from './api';
@@ -41,7 +41,7 @@ function Reports() {
   const [selected, setSelected] = useState(new Set());
   const [selectedItemLineIds, setSelectedItemLineIds] = useState(new Set());
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     const url = `/api/reports/purchase-orders?startDate=${startDate}&endDate=${endDate}`;
     const res = await apiFetch(url);
     const data = await res.json();
@@ -53,7 +53,7 @@ function Reports() {
       ),
     }));
     setOrders(list);
-  };
+  }, [startDate, endDate]);
 
   const fetchItems = async () => {
     const res = await apiFetch('/inventory');
@@ -67,7 +67,7 @@ function Reports() {
 
   useEffect(() => {
     fetchOrders();
-  }, [startDate, endDate]);
+  }, [fetchOrders]);
 
   const selectedItemName = useMemo(() => {
     return items.find((x) => x.id.toString() === selectedItem)?.name || '';
