@@ -103,19 +103,16 @@ function Purchases({ refreshFlag }) {
   };
 
   useEffect(() => {
-    if (!isAdmin) return;
     fetchOrders();
     fetchLowStock();
     fetchFrequentItems();
-  }, [refreshFlag, isAdmin, fetchOrders]);
+  }, [refreshFlag, fetchOrders]);
 
   useEffect(() => {
-    if (!isAdmin) return;
     if (showModal) fetchLowStock();
-  }, [showModal, isAdmin]);
+  }, [showModal]);
 
   useEffect(() => {
-    if (!isAdmin) return;
     const selected = lowStock.filter((it) => selectedIds.includes(it.id.toString()));
     // Map selected low stock items into autoItems. Include unit and product_number so that
     // purchase orders carry these extra fields even though the inventory tab hides unit.
@@ -127,7 +124,7 @@ function Purchases({ refreshFlag }) {
       product_number: it.product_number || '',
     }));
     setAutoItems(mapped);
-  }, [selectedIds, lowStock, isAdmin]);
+  }, [selectedIds, lowStock]);
 
 
   const combinedItems = React.useCallback(() =>
@@ -183,12 +180,12 @@ function Purchases({ refreshFlag }) {
   }, [combinedItems, notes, editingDraftId, fetchOrders, setShowModal, setSelectedIds, setAutoItems, setCustomItems, setNotes, setEditingDraftId]);
 
   useEffect(() => {
-    if (!isAdmin || !showModal || editingDraftId == null) return;
+    if (!showModal || editingDraftId == null) return;
     const interval = setInterval(() => {
       saveDraft(true);
     }, 60000);
     return () => clearInterval(interval);
-  }, [showModal, editingDraftId, autoItems, customItems, notes, isAdmin, saveDraft]);
+  }, [showModal, editingDraftId, autoItems, customItems, notes, saveDraft]);
 
   useEffect(() => {
     if (status) {
@@ -198,9 +195,8 @@ function Purchases({ refreshFlag }) {
   }, [status]);
 
   const sortedLowStock = React.useMemo(() => {
-    if (!isAdmin) return [];
-    const data = [...lowStock];
-    if (sortLow.key) {
+  const data = [...lowStock];
+  if (sortLow.key) {
       data.sort((a, b) => {
         const getVal = (row) => {
           if (sortLow.key === 'price') {
@@ -221,7 +217,7 @@ function Purchases({ refreshFlag }) {
       });
     }
     return data;
-  }, [lowStock, sortLow, isAdmin, lastPrices]);
+  }, [lowStock, sortLow, lastPrices]);
 
   const draftOrders = useMemo(
     () => orders.filter((o) => o.status === 'draft'),
@@ -320,11 +316,7 @@ function Purchases({ refreshFlag }) {
     }
   };
 
-  if (!isAdmin) {
-    return (
-      <div className="permission-error">Only admins can access this section.</div>
-    );
-  }
+  // ...existing code...
 
   return (
     <div className="purchases-container">
